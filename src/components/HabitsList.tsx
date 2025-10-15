@@ -2,14 +2,17 @@
 
 import { Habit } from '@/types/habit';
 import { HabitService } from '@/lib/habitService';
+import HabitActions from './HabitActions';
 
 interface HabitsListProps {
   habits: Habit[];
   currentDate: Date;
   onHabitToggle?: (habitId: string, completed: boolean) => void;
+  onHabitEdit?: (habit: Habit) => void;
+  onHabitDelete?: (habitId: string) => void;
 }
 
-export default function HabitsList({ habits, currentDate, onHabitToggle }: HabitsListProps) {
+export default function HabitsList({ habits, currentDate, onHabitToggle, onHabitEdit, onHabitDelete }: HabitsListProps) {
   const dateString = HabitService.formatDate(currentDate);
 
   const handleHabitToggle = (habitId: string) => {
@@ -66,7 +69,7 @@ export default function HabitsList({ habits, currentDate, onHabitToggle }: Habit
                   </p>
                 )}
               </div>
-              <div className="ml-4">
+              <div className="ml-4 flex items-center space-x-2">
                 <button 
                   onClick={() => handleHabitToggle(habit.id)}
                   className={`w-6 h-6 rounded-full border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -82,6 +85,11 @@ export default function HabitsList({ habits, currentDate, onHabitToggle }: Habit
                     </svg>
                   )}
                 </button>
+                <HabitActions
+                  habit={habit}
+                  onEdit={onHabitEdit || (() => {})}
+                  onDelete={onHabitDelete || (() => {})}
+                />
               </div>
             </div>
           </div>

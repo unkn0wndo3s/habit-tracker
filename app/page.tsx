@@ -4,12 +4,15 @@ import { useState, useEffect } from 'react';
 import { Habit } from '@/types/habit';
 import { HabitService } from '@/lib/habitService';
 import CreateHabitForm from '@/components/CreateHabitForm';
+import EditHabitForm from '@/components/EditHabitForm';
 import DateNavigation from '@/components/DateNavigation';
 import HabitsList from '@/components/HabitsList';
 
 export default function Home() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
@@ -20,6 +23,24 @@ export default function Home() {
   const handleHabitCreated = (habit: Habit) => {
     setHabits(prev => [...prev, habit]);
     setShowCreateForm(false);
+  };
+
+  const handleHabitEdit = (habit: Habit) => {
+    setEditingHabit(habit);
+    setShowEditForm(true);
+  };
+
+  const handleHabitUpdated = (updatedHabit: Habit) => {
+    setHabits(prev => prev.map(h => h.id === updatedHabit.id ? updatedHabit : h));
+    setShowEditForm(false);
+    setEditingHabit(null);
+  };
+
+  const handleHabitDelete = (habitId: string) => {
+    const success = HabitService.deleteHabit(habitId);
+    if (success) {
+      setHabits(prev => prev.filter(h => h.id !== habitId));
+    }
   };
 
   const handleHabitToggle = (habitId: string, completed: boolean) => {
@@ -77,6 +98,8 @@ export default function Home() {
             habits={getHabitsForToday()} 
             currentDate={currentDate}
             onHabitToggle={handleHabitToggle}
+            onHabitEdit={handleHabitEdit}
+            onHabitDelete={handleHabitDelete}
           />
         )}
       </main>
@@ -86,6 +109,18 @@ export default function Home() {
         <CreateHabitForm
           onHabitCreated={handleHabitCreated}
           onCancel={() => setShowCreateForm(false)}
+        />
+      )}
+
+      {/* Edit Habit Form Modal */}
+      {showEditForm && editingHabit && (
+        <EditHabitForm
+          habit={editingHabit}
+          onHabitUpdated={handleHabitUpdated}
+          onCancel={() => {
+            setShowEditForm(false);
+            setEditingHabit(null);
+          }}
         />
       )}
     </div>
