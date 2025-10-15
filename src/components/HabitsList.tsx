@@ -10,9 +10,10 @@ interface HabitsListProps {
   onHabitToggle?: (habitId: string, completed: boolean) => void;
   onHabitEdit?: (habit: Habit) => void;
   onHabitDelete?: (habitId: string) => void;
+  onHabitDetail?: (habit: Habit) => void;
 }
 
-export default function HabitsList({ habits, currentDate, onHabitToggle, onHabitEdit, onHabitDelete }: HabitsListProps) {
+export default function HabitsList({ habits, currentDate, onHabitToggle, onHabitEdit, onHabitDelete, onHabitDetail }: HabitsListProps) {
   const dateString = HabitService.formatDate(currentDate);
 
   const handleHabitToggle = (habitId: string) => {
@@ -56,18 +57,23 @@ export default function HabitsList({ habits, currentDate, onHabitToggle, onHabit
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h3 className={`font-medium transition-colors ${
-                  completed ? 'text-green-800 line-through' : 'text-gray-900'
-                }`}>
-                  {habit.name}
-                </h3>
-                {habit.description && (
-                  <p className={`text-sm mt-1 transition-colors ${
-                    completed ? 'text-green-600' : 'text-gray-500'
+                <button
+                  onClick={() => onHabitDetail?.(habit)}
+                  className="text-left w-full"
+                >
+                  <h3 className={`font-medium transition-colors ${
+                    completed ? 'text-green-800 line-through' : 'text-gray-900'
                   }`}>
-                    {habit.description}
-                  </p>
-                )}
+                    {habit.name}
+                  </h3>
+                  {habit.description && (
+                    <p className={`text-sm mt-1 transition-colors ${
+                      completed ? 'text-green-600' : 'text-gray-500'
+                    }`}>
+                      {habit.description}
+                    </p>
+                  )}
+                </button>
               </div>
               <div className="ml-4 flex items-center space-x-2">
                 <button 
