@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Habit } from '@/types/habit';
 import { HabitService } from '@/lib/habitService';
 import CreateHabitForm from '@/components/CreateHabitForm';
+import DateNavigation from '@/components/DateNavigation';
+import HabitsList from '@/components/HabitsList';
 
 export default function Home() {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -20,13 +22,9 @@ export default function Home() {
     setShowCreateForm(false);
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const handleHabitToggle = (habitId: string, completed: boolean) => {
+    // Force re-render by updating state
+    setHabits(prev => [...prev]);
   };
 
   const getHabitsForToday = () => {
@@ -48,12 +46,11 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Date Display */}
-      <div className="bg-white px-4 py-3 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">
-          {formatDate(currentDate)}
-        </h2>
-      </div>
+      {/* Date Navigation */}
+      <DateNavigation 
+        currentDate={currentDate} 
+        onDateChange={setCurrentDate} 
+      />
 
       {/* Habits List */}
       <main className="p-4">
@@ -76,25 +73,11 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {getHabitsForToday().map((habit) => (
-              <div key={habit.id} className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900">{habit.name}</h3>
-                    {habit.description && (
-                      <p className="text-sm text-gray-500 mt-1">{habit.description}</p>
-                    )}
-                  </div>
-                  <div className="ml-4">
-                    <button className="w-6 h-6 rounded-full border-2 border-gray-300 hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      {/* Checkbox sera implémenté dans US3 */}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <HabitsList 
+            habits={getHabitsForToday()} 
+            currentDate={currentDate}
+            onHabitToggle={handleHabitToggle}
+          />
         )}
       </main>
 
