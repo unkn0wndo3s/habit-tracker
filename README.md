@@ -18,8 +18,8 @@ Application mobile de suivi d’habitudes. Pour débuter, aucune fonctionnalité
 - **US4 — Naviguer par jour**: En tant qu’utilisateur, je veux passer au jour précédent/suivant et revenir à aujourd’hui afin de consulter/mettre à jour d’autres dates.
 - **US5 — Modifier une habitude**: En tant qu’utilisateur, je veux modifier le nom, la description et le planning d’une habitude afin de l’ajuster.
 - **US6 — Supprimer une habitude**: En tant qu’utilisateur, je veux supprimer une habitude afin d’épurer ma liste.
-- **US7 — Persistance locale**: En tant qu’utilisateur, je veux que mes données soient conservées en local (localStorage) afin de retrouver mes habitudes sans compte.
-- **US8 — Interface mobile**: En tant qu’utilisateur, je veux une UI utilisable sur smartphone (largeur max ~480px, barre d’action basse) afin d’interagir facilement.
+- **US7 — Persistance locale**: En tant qu’utilisateur, je veux que mes données soient conservées en local afin de retrouver mes habitudes sans compte.
+- **US8 — Interface mobile**: En tant qu’utilisateur, je veux une UI utilisable sur smartphone afin d’interagir facilement.
 
 #### Version 1.1 (feedback & progression)
 
@@ -42,10 +42,6 @@ Application mobile de suivi d’habitudes. Pour débuter, aucune fonctionnalité
 - **US19 — Cache offline**: En tant qu’utilisateur, je veux que l’app fonctionne hors connexion afin de cocher mes habitudes sans réseau.
 - **US20 — Notifications locales**: En tant qu’utilisateur, je veux recevoir des rappels locaux pour les habitudes planifiées afin de ne pas oublier.
 - **US21 — Statistiques simples**: En tant qu’utilisateur, je veux voir un taux de complétion mensuel et une heatmap simple afin de mesurer mes progrès.
-
-#### Version 2.0 (future — multi-utilisateur & synchro, hors périmètre initial)
-
-- Authentification, synchronisation cloud, partage/communautés. Non planifié pour le démarrage.
 
 ### Ordonnancement de développement (proposé)
 
