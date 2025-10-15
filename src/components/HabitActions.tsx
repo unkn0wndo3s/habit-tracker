@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Habit } from '@/types/habit';
+import ConfirmationDialog from './ConfirmationDialog';
 
 interface HabitActionsProps {
   habit: Habit;
@@ -11,17 +12,25 @@ interface HabitActionsProps {
 
 export default function HabitActions({ habit, onEdit, onDelete }: HabitActionsProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleEdit = () => {
     onEdit(habit);
     setShowMenu(false);
   };
 
-  const handleDelete = () => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer l'habitude "${habit.name}" ?`)) {
-      onDelete(habit.id);
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
     setShowMenu(false);
+  };
+
+  const handleDeleteConfirm = () => {
+    onDelete(habit.id);
+    setShowDeleteConfirm(false);
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -58,7 +67,7 @@ export default function HabitActions({ habit, onEdit, onDelete }: HabitActionsPr
               </div>
             </button>
             <button
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 focus:outline-none focus:bg-red-50"
             >
               <div className="flex items-center">
@@ -71,6 +80,18 @@ export default function HabitActions({ habit, onEdit, onDelete }: HabitActionsPr
           </div>
         </>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showDeleteConfirm}
+        title="Supprimer l'habitude"
+        message={`Êtes-vous sûr de vouloir supprimer l'habitude "${habit.name}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        variant="danger"
+      />
     </div>
   );
 }
