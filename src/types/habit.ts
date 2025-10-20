@@ -6,6 +6,11 @@ export interface Habit {
   createdAt: Date;
 }
 
+export interface DailyHabit extends Habit {
+  isCompleted: boolean;
+  completedAt?: Date;
+}
+
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
 export const DAYS_OF_WEEK: { value: DayOfWeek; label: string }[] = [
