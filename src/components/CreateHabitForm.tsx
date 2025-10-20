@@ -6,13 +6,15 @@ import { HabitStorage } from '@/services/habitStorage';
 
 interface CreateHabitFormProps {
   onHabitCreated: (habit: Habit) => void;
+  onError?: (message: string) => void;
 }
 
-export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps) {
+export default function CreateHabitForm({ onHabitCreated, onError }: CreateHabitFormProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [targetDays, setTargetDays] = useState<DayOfWeek[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; description?: string; targetDays?: string }>({});
 
   const handleDayToggle = (day: DayOfWeek) => {
     setTargetDays(prev => 
@@ -22,16 +24,31 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const validateForm = () => {
+    const newErrors: { name?: string; description?: string; targetDays?: string } = {};
+
     if (!name.trim()) {
-      alert('Le nom de l&apos;habitude est requis');
-      return;
+      newErrors.name = 'Le nom de l\'habitude est requis';
+    } else if (name.trim().length > 50) {
+      newErrors.name = 'Le nom ne peut pas dépasser 50 caractères';
+    }
+
+    if (description.trim().length > 200) {
+      newErrors.description = 'La description ne peut pas dépasser 200 caractères';
     }
 
     if (targetDays.length === 0) {
-      alert('Veuillez sélectionner au moins un jour de la semaine');
+      newErrors.targetDays = 'Veuillez sélectionner au moins un jour de la semaine';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
       return;
     }
 
@@ -50,9 +67,10 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
       setName('');
       setDescription('');
       setTargetDays([]);
+      setErrors({});
     } catch (error) {
-      console.error('Erreur lors de la création de l&apos;habitude:', error);
-      alert('Erreur lors de la création de l&apos;habitude');
+      console.error('Erreur lors de la création de l\'habitude:', error);
+      onError?.('Erreur lors de la création de l\'habitude');
     } finally {
       setIsSubmitting(false);
     }
@@ -63,7 +81,7 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
       {/* Nom de l'habitude */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-          Nom de l&apos;habitude *
+          Nom de l&apos;habitude * ({name.length}/50)
         </label>
         <input
           type="text"
@@ -71,15 +89,21 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Ex: Méditation, Sport, Lecture..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          maxLength={50}
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            errors.name ? 'border-red-300' : 'border-gray-300'
+          }`}
           required
         />
+        {errors.name && (
+          <p className="text-sm text-red-600 mt-1">{errors.name}</p>
+        )}
       </div>
 
       {/* Description optionnelle */}
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-          Description (optionnelle)
+          Description (optionnelle) ({description.length}/200)
         </label>
         <textarea
           id="description"
@@ -87,8 +111,14 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Décrivez votre habitude..."
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+          maxLength={200}
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
+            errors.description ? 'border-red-300' : 'border-gray-300'
+          }`}
         />
+        {errors.description && (
+          <p className="text-sm text-red-600 mt-1">{errors.description}</p>
+        )}
       </div>
 
       {/* Jours de la semaine */}
@@ -116,8 +146,8 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
             </label>
           ))}
         </div>
-        {targetDays.length === 0 && (
-          <p className="text-sm text-red-600 mt-1">Sélectionnez au moins un jour</p>
+        {errors.targetDays && (
+          <p className="text-sm text-red-600 mt-1">{errors.targetDays}</p>
         )}
       </div>
 

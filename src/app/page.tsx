@@ -7,6 +7,9 @@ import CreateHabitForm from '@/components/CreateHabitForm';
 import EditHabitForm from '@/components/EditHabitForm';
 import DailyHabitsList from '@/components/DailyHabitsList';
 import DateNavigation from '@/components/DateNavigation';
+import ConfirmationModal from '@/components/ConfirmationModal';
+import Toast from '@/components/Toast';
+import { useToast } from '@/hooks/useToast';
 
 type ViewMode = 'daily' | 'create' | 'manage' | 'edit';
 
@@ -16,6 +19,8 @@ export default function Home() {
   const [dailyHabits, setDailyHabits] = useState<DailyHabit[]>([]);
   const [allHabits, setAllHabits] = useState<Habit[]>([]);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
+  const { toasts, showSuccess, showError, removeToast } = useToast();
 
   const loadHabits = useCallback(() => {
     setAllHabits(HabitStorage.loadHabits());
@@ -23,7 +28,9 @@ export default function Home() {
 
   const loadDailyHabits = useCallback(() => {
     const habits = HabitStorage.getHabitsForDate(currentDate);
-    setDailyHabits(habits);
+    // Trier par ordre de création (plus ancien en premier)
+    const sortedHabits = habits.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    setDailyHabits(sortedHabits);
   }, [currentDate]);
 
   useEffect(() => {
@@ -39,6 +46,7 @@ export default function Home() {
   const handleHabitCreated = (newHabit: Habit) => {
     setAllHabits(prev => [...prev, newHabit]);
     setViewMode('daily');
+    showSuccess('Habitude créée avec succès !');
   };
 
   const handleHabitUpdated = (updatedHabit: Habit) => {
@@ -54,6 +62,9 @@ export default function Home() {
       ));
       setEditingHabit(null);
       setViewMode('manage');
+      showSuccess('Habitude modifiée avec succès !');
+    } else {
+      showError('Erreur lors de la modification de l\'habitude');
     }
   };
 
@@ -67,16 +78,27 @@ export default function Home() {
     setViewMode('manage');
   };
 
-  const handleDeleteHabit = (habitId: string) => {
-    const success = HabitStorage.deleteHabit(habitId);
+  const handleDeleteHabit = (habit: Habit) => {
+    setHabitToDelete(habit);
+  };
+
+  const confirmDeleteHabit = () => {
+    if (!habitToDelete) return;
+    
+    const success = HabitStorage.deleteHabit(habitToDelete.id);
     if (success) {
-      setAllHabits(prev => prev.filter(habit => habit.id !== habitId));
+      setAllHabits(prev => prev.filter(habit => habit.id !== habitToDelete.id));
+      setHabitToDelete(null);
+      showSuccess('Habitude supprimée avec succès !');
+    } else {
+      showError('Erreur lors de la suppression de l\'habitude');
     }
   };
 
   const handleHabitToggle = (habitId: string) => {
     HabitStorage.toggleHabitCompletion(habitId, currentDate);
     loadDailyHabits();
+    // Pas de message de confirmation pour le toggle car c'est une action fréquente
   };
 
   const handleDateChange = (date: Date) => {
@@ -139,7 +161,10 @@ export default function Home() {
                   ✕
                 </button>
               </div>
-              <CreateHabitForm onHabitCreated={handleHabitCreated} />
+              <CreateHabitForm 
+                onHabitCreated={handleHabitCreated} 
+                onError={showError}
+              />
             </div>
           )}
 
@@ -158,6 +183,7 @@ export default function Home() {
                 habit={editingHabit}
                 onHabitUpdated={handleHabitUpdated}
                 onCancel={handleCancelEdit}
+                onError={showError}
               />
             </div>
           )}
@@ -219,7 +245,7 @@ export default function Home() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => handleDeleteHabit(habit.id)}
+                            onClick={() => handleDeleteHabit(habit)}
                             className="p-2 text-gray-400 hover:text-red-600 transition-colors"
                             title="Supprimer l'habitude"
                           >
@@ -244,6 +270,29 @@ export default function Home() {
             </div>
           )}
         </main>
+
+        {/* Modals et Toasts */}
+        <ConfirmationModal
+          isOpen={!!habitToDelete}
+          onClose={() => setHabitToDelete(null)}
+          onConfirm={confirmDeleteHabit}
+          title="Supprimer l'habitude"
+          message={`Êtes-vous sûr de vouloir supprimer l'habitude "${habitToDelete?.name}" ? Cette action supprimera également tout l'historique de progression.`}
+          confirmText="Supprimer"
+          cancelText="Annuler"
+          variant="danger"
+        />
+
+        {/* Toasts */}
+        {toasts.map((toast) => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            duration={toast.duration}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
       </div>
     </div>
   );

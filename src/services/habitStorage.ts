@@ -69,6 +69,10 @@ export class HabitStorage {
     }
     
     this.saveHabits(filteredHabits);
+    
+    // Supprimer aussi l'historique de progression de cette habitude
+    this.removeHabitFromCompletions(id);
+    
     return true;
   }
 
@@ -128,5 +132,20 @@ export class HabitStorage {
   static clearHabits(): void {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(COMPLETIONS_KEY);
+  }
+
+  private static removeHabitFromCompletions(habitId: string): void {
+    const completions = this.loadCompletions();
+    const updatedCompletions: Record<string, string[]> = {};
+    
+    // Parcourir toutes les dates et supprimer l'habitude des complétions
+    Object.keys(completions).forEach(dateKey => {
+      const dayCompletions = completions[dateKey].filter(id => id !== habitId);
+      if (dayCompletions.length > 0) {
+        updatedCompletions[dateKey] = dayCompletions;
+      }
+    });
+    
+    this.saveCompletions(updatedCompletions);
   }
 }

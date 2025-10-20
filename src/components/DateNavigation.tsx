@@ -1,6 +1,6 @@
 'use client';
 
-import { formatDateShort, isToday, addDays } from '@/utils/dateUtils';
+import { formatDate, isToday, addDays } from '@/utils/dateUtils';
 
 interface DateNavigationProps {
   currentDate: Date;
@@ -42,7 +42,7 @@ export default function DateNavigation({ currentDate, onDateChange }: DateNaviga
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
             }`}
           >
-            {formatDateShort(currentDate)}
+            {formatDate(currentDate)}
           </button>
           {isToday(currentDate) && (
             <p className="text-xs text-blue-600 mt-1">Aujourd&apos;hui</p>
