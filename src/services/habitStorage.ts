@@ -43,6 +43,23 @@ export class HabitStorage {
     return newHabit;
   }
 
+  static updateHabit(id: string, updates: Partial<Omit<Habit, 'id' | 'createdAt'>>): Habit | null {
+    const habits = this.loadHabits();
+    const index = habits.findIndex(habit => habit.id === id);
+    
+    if (index === -1) {
+      return null;
+    }
+    
+    habits[index] = {
+      ...habits[index],
+      ...updates
+    };
+    
+    this.saveHabits(habits);
+    return habits[index];
+  }
+
   static getHabitsForDate(date: Date): DailyHabit[] {
     const habits = this.loadHabits();
     const dayOfWeek = getDayOfWeek(date);

@@ -4,16 +4,18 @@ import { useState, useEffect } from 'react';
 import { Habit, DailyHabit } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
 import CreateHabitForm from '@/components/CreateHabitForm';
+import EditHabitForm from '@/components/EditHabitForm';
 import DailyHabitsList from '@/components/DailyHabitsList';
 import DateNavigation from '@/components/DateNavigation';
 
-type ViewMode = 'daily' | 'create' | 'manage';
+type ViewMode = 'daily' | 'create' | 'manage' | 'edit';
 
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [dailyHabits, setDailyHabits] = useState<DailyHabit[]>([]);
   const [allHabits, setAllHabits] = useState<Habit[]>([]);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
   useEffect(() => {
     loadHabits();
@@ -39,6 +41,32 @@ export default function Home() {
     setViewMode('daily');
   };
 
+  const handleHabitUpdated = (updatedHabit: Habit) => {
+    const success = HabitStorage.updateHabit(updatedHabit.id, {
+      name: updatedHabit.name,
+      description: updatedHabit.description,
+      targetDays: updatedHabit.targetDays
+    });
+    
+    if (success) {
+      setAllHabits(prev => prev.map(habit => 
+        habit.id === updatedHabit.id ? updatedHabit : habit
+      ));
+      setEditingHabit(null);
+      setViewMode('manage');
+    }
+  };
+
+  const handleEditHabit = (habit: Habit) => {
+    setEditingHabit(habit);
+    setViewMode('edit');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingHabit(null);
+    setViewMode('manage');
+  };
+
   const handleHabitToggle = (habitId: string) => {
     HabitStorage.toggleHabitCompletion(habitId, currentDate);
     loadDailyHabits();
@@ -51,7 +79,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-md mx-auto bg-white min-h-screen">
-        {/* Header */}
+          {/* Header */}
         <header className="bg-blue-600 text-white p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -108,6 +136,25 @@ export default function Home() {
             </div>
           )}
 
+          {viewMode === 'edit' && editingHabit && (
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-gray-900">Modifier l'habitude</h2>
+                <button
+                  onClick={handleCancelEdit}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              <EditHabitForm
+                habit={editingHabit}
+                onHabitUpdated={handleHabitUpdated}
+                onCancel={handleCancelEdit}
+              />
+            </div>
+          )}
+
           {viewMode === 'manage' && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
@@ -137,23 +184,36 @@ export default function Home() {
                 <div className="space-y-3">
                   {allHabits.map((habit) => (
                     <div key={habit.id} className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900">{habit.name}</h3>
-                      {habit.description && (
-                        <p className="text-sm text-gray-600 mt-1">{habit.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {habit.targetDays.map((day) => (
-                          <span
-                            key={day}
-                            className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                          >
-                            {day.charAt(0).toUpperCase() + day.slice(1)}
-                          </span>
-                        ))}
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{habit.name}</h3>
+                          {habit.description && (
+                            <p className="text-sm text-gray-600 mt-1">{habit.description}</p>
+                          )}
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {habit.targetDays.map((day) => (
+                              <span
+                                key={day}
+                                className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                              >
+                                {day.charAt(0).toUpperCase() + day.slice(1)}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleEditHabit(habit)}
+                          className="ml-3 p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Modifier l'habitude"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
+              </div>
+            ))}
+          </div>
               )}
 
               {/* Bouton pour créer une habitude */}
