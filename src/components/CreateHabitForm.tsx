@@ -26,7 +26,7 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
     e.preventDefault();
     
     if (!name.trim()) {
-      alert('Le nom de l\'habitude est requis');
+      alert('Le nom de l&apos;habitude est requis');
       return;
     }
 
@@ -51,8 +51,8 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
       setDescription('');
       setTargetDays([]);
     } catch (error) {
-      console.error('Erreur lors de la création de l\'habitude:', error);
-      alert('Erreur lors de la création de l\'habitude');
+      console.error('Erreur lors de la création de l&apos;habitude:', error);
+      alert('Erreur lors de la création de l&apos;habitude');
     } finally {
       setIsSubmitting(false);
     }
@@ -63,7 +63,7 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
       {/* Nom de l'habitude */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-          Nom de l'habitude *
+          Nom de l&apos;habitude *
         </label>
         <input
           type="text"
@@ -127,7 +127,7 @@ export default function CreateHabitForm({ onHabitCreated }: CreateHabitFormProps
         disabled={isSubmitting || !name.trim() || targetDays.length === 0}
         className="w-full bg-blue-600 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {isSubmitting ? 'Création...' : 'Créer l\'habitude'}
+        {isSubmitting ? 'Création...' : "Créer l'habitude"}
       </button>
     </form>
   );

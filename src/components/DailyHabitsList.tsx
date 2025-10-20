@@ -20,7 +20,7 @@ export default function DailyHabitsList({ date, habits, onHabitToggle }: DailyHa
           Aucune habitude prévue
         </h3>
         <p className="text-gray-500 text-sm">
-          Aucune habitude n'est planifiée pour {formatDate(date)}
+          Aucune habitude n&apos;est planifiée pour {formatDate(date)}
         </p>
       </div>
     );

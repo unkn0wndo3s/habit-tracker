@@ -20,7 +20,7 @@ export class HabitStorage {
       
       const habits = JSON.parse(stored);
       // Convertir les dates string en objets Date
-      return habits.map((habit: any) => ({
+      return habits.map((habit: Habit) => ({
         ...habit,
         createdAt: new Date(habit.createdAt)
       }));

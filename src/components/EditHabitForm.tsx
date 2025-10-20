@@ -33,7 +33,7 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel }: EditH
     e.preventDefault();
     
     if (!name.trim()) {
-      alert('Le nom de l\'habitude est requis');
+      alert('Le nom de l&apos;habitude est requis');
       return;
     }
 
@@ -54,8 +54,8 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel }: EditH
 
       onHabitUpdated(updatedHabit);
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de l\'habitude:', error);
-      alert('Erreur lors de la mise à jour de l\'habitude');
+      console.error('Erreur lors de la mise à jour de l&apos;habitude:', error);
+      alert('Erreur lors de la mise à jour de l&apos;habitude');
     } finally {
       setIsSubmitting(false);
     }
@@ -66,7 +66,7 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel }: EditH
       {/* Nom de l'habitude */}
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-          Nom de l'habitude *
+          Nom de l&apos;habitude *
         </label>
         <input
           type="text"

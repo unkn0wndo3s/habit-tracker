@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Habit, DailyHabit } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
 import CreateHabitForm from '@/components/CreateHabitForm';
@@ -17,24 +17,24 @@ export default function Home() {
   const [allHabits, setAllHabits] = useState<Habit[]>([]);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
+  const loadHabits = useCallback(() => {
+    setAllHabits(HabitStorage.loadHabits());
+  }, []);
+
+  const loadDailyHabits = useCallback(() => {
+    const habits = HabitStorage.getHabitsForDate(currentDate);
+    setDailyHabits(habits);
+  }, [currentDate]);
+
   useEffect(() => {
     loadHabits();
-  }, []);
+  }, [loadHabits]);
 
   useEffect(() => {
     if (viewMode === 'daily') {
       loadDailyHabits();
     }
-  }, [currentDate, allHabits, viewMode]);
-
-  const loadHabits = () => {
-    setAllHabits(HabitStorage.loadHabits());
-  };
-
-  const loadDailyHabits = () => {
-    const habits = HabitStorage.getHabitsForDate(currentDate);
-    setDailyHabits(habits);
-  };
+  }, [currentDate, allHabits, viewMode, loadDailyHabits]);
 
   const handleHabitCreated = (newHabit: Habit) => {
     setAllHabits(prev => [...prev, newHabit]);
@@ -146,7 +146,7 @@ export default function Home() {
           {viewMode === 'edit' && editingHabit && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-gray-900">Modifier l'habitude</h2>
+                <h2 className="text-lg font-medium text-gray-900">Modifier l&apos;habitude</h2>
                 <button
                   onClick={handleCancelEdit}
                   className="text-gray-400 hover:text-gray-600"

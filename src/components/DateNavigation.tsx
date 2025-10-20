@@ -45,7 +45,7 @@ export default function DateNavigation({ currentDate, onDateChange }: DateNaviga
             {formatDateShort(currentDate)}
           </button>
           {isToday(currentDate) && (
-            <p className="text-xs text-blue-600 mt-1">Aujourd'hui</p>
+            <p className="text-xs text-blue-600 mt-1">Aujourd&apos;hui</p>
           )}
         </div>
 
