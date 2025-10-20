@@ -60,6 +60,18 @@ export class HabitStorage {
     return habits[index];
   }
 
+  static deleteHabit(id: string): boolean {
+    const habits = this.loadHabits();
+    const filteredHabits = habits.filter(habit => habit.id !== id);
+    
+    if (filteredHabits.length === habits.length) {
+      return false; // Habit not found
+    }
+    
+    this.saveHabits(filteredHabits);
+    return true;
+  }
+
   static getHabitsForDate(date: Date): DailyHabit[] {
     const habits = this.loadHabits();
     const dayOfWeek = getDayOfWeek(date);
