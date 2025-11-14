@@ -8,6 +8,7 @@ import EditHabitForm from '@/components/EditHabitForm';
 import DailyHabitsList from '@/components/DailyHabitsList';
 import DateNavigation from '@/components/DateNavigation';
 import SevenDaysView from '@/components/SevenDaysView';
+import StreakBadge from '@/components/StreakBadge';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
@@ -258,7 +259,10 @@ export default function Home() {
                     <div key={habit.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{habit.name}</h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-medium text-gray-900">{habit.name}</h3>
+                            <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
+                          </div>
                           {habit.description && (
                             <p className="text-sm text-gray-600 mt-1">{habit.description}</p>
                           )}

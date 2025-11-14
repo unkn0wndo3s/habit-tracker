@@ -192,4 +192,56 @@ export class HabitStorage {
 
     return result;
   }
+
+  /**
+   * Calcule la série actuelle (streak) d'une habitude
+   * La série compte les jours consécutifs où l'habitude a été complétée
+   * La série se remet à zéro si un jour programmé n'a pas été complété
+   * @param habitId L'ID de l'habitude
+   * @returns Le nombre de jours consécutifs (streak)
+   */
+  static getHabitStreak(habitId: string): number {
+    const habit = this.loadHabits().find(h => h.id === habitId);
+    if (!habit) {
+      return 0;
+    }
+
+    const completions = this.loadCompletions();
+    const today = new Date();
+    let streak = 0;
+    let currentDate = new Date(today);
+    const todayKey = getDateKey(today);
+    
+    // Parcourir les jours en remontant depuis aujourd'hui
+    // On compte les jours programmés complétés consécutivement
+    // On s'arrête dès qu'on trouve un jour programmé non complété dans le passé
+    for (let i = 0; i < 365; i++) {
+      const dateKey = getDateKey(currentDate);
+      const dayOfWeek = getDayOfWeek(currentDate);
+      const isScheduled = habit.targetDays.includes(dayOfWeek);
+      const isCompleted = completions[dateKey]?.includes(habitId) || false;
+      const isToday = dateKey === todayKey;
+
+      if (isScheduled) {
+        if (isCompleted) {
+          // Jour programmé et complété : on incrémente le streak
+          streak++;
+        } else {
+          // Jour programmé mais non complété
+          if (!isToday) {
+            // Si c'est un jour passé non complété, on arrête le comptage
+            // Le streak actuel est la série jusqu'à présent
+            break;
+          }
+          // Si c'est aujourd'hui et non complété, on ne compte pas aujourd'hui
+          // mais on continue à vérifier les jours précédents
+        }
+      }
+
+      // Passer au jour précédent
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+
+    return streak;
+  }
 }

@@ -3,6 +3,7 @@
 import { Habit } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
 import { formatDateShort, isToday, getDateKey } from '@/utils/dateUtils';
+import StreakBadge from './StreakBadge';
 
 interface SevenDaysViewProps {
   habits: Habit[];
@@ -116,7 +117,7 @@ export default function SevenDaysView({ habits, onClose }: SevenDaysViewProps) {
                 key={habit.id}
                 className="flex items-center border-b border-gray-100 pb-2"
               >
-                {/* Nom de l'habitude */}
+                {/* Nom de l'habitude avec streak */}
                 <div className="flex-shrink-0 w-32 pr-2">
                   <div className="text-sm font-medium text-gray-900 truncate" title={habit.name}>
                     {habit.name}
@@ -126,6 +127,9 @@ export default function SevenDaysView({ habits, onClose }: SevenDaysViewProps) {
                       {habit.description}
                     </div>
                   )}
+                  <div className="mt-1">
+                    <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
+                  </div>
                 </div>
 
                 {/* Indicateurs pour chaque jour */}

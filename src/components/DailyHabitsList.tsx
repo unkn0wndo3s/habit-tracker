@@ -2,6 +2,8 @@
 
 import { DailyHabit } from '@/types/habit';
 import { formatDate } from '@/utils/dateUtils';
+import { HabitStorage } from '@/services/habitStorage';
+import StreakBadge from './StreakBadge';
 
 interface DailyHabitsListProps {
   date: Date;
@@ -20,7 +22,7 @@ export default function DailyHabitsList({ date, habits, onHabitToggle }: DailyHa
           Aucune habitude prévue
         </h3>
         <p className="text-gray-500 text-sm">
-          Aucune habitude n&apos;est planifiée pour {formatDate(date)}
+          Aucune habitude n'est planifiée pour {formatDate(date)}
         </p>
       </div>
     );
@@ -61,11 +63,14 @@ export default function DailyHabitsList({ date, habits, onHabitToggle }: DailyHa
                 )}
               </button>
               <div className="flex-1 min-w-0">
-                <h3 className={`font-medium ${
-                  habit.isCompleted ? 'text-green-800 line-through' : 'text-gray-900'
-                }`}>
-                  {habit.name}
-                </h3>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className={`font-medium ${
+                    habit.isCompleted ? 'text-green-800 line-through' : 'text-gray-900'
+                  }`}>
+                    {habit.name}
+                  </h3>
+                  <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
+                </div>
                 {habit.description && (
                   <p className={`text-sm mt-1 ${
                     habit.isCompleted ? 'text-green-600' : 'text-gray-600'
