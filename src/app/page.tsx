@@ -7,11 +7,12 @@ import CreateHabitForm from '@/components/CreateHabitForm';
 import EditHabitForm from '@/components/EditHabitForm';
 import DailyHabitsList from '@/components/DailyHabitsList';
 import DateNavigation from '@/components/DateNavigation';
+import SevenDaysView from '@/components/SevenDaysView';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 
-type ViewMode = 'daily' | 'create' | 'manage' | 'edit';
+type ViewMode = 'daily' | 'create' | 'manage' | 'edit' | 'sevenDays';
 
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
@@ -20,6 +21,7 @@ export default function Home() {
   const [allHabits, setAllHabits] = useState<Habit[]>([]);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
+  const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('daily');
   const { toasts, showSuccess, showError, removeToast } = useToast();
 
   const loadHabits = useCallback(() => {
@@ -73,6 +75,16 @@ export default function Home() {
     setViewMode('edit');
   };
 
+  const handleViewSevenDays = () => {
+    setPreviousViewMode(viewMode);
+    setViewMode('sevenDays');
+  };
+
+  const handleCloseSevenDays = () => {
+    // Retourner à la vue précédente (daily ou manage)
+    setViewMode(previousViewMode);
+  };
+
   const handleCancelEdit = () => {
     setEditingHabit(null);
     setViewMode('manage');
@@ -121,6 +133,7 @@ export default function Home() {
                 className={`px-3 py-1 rounded text-sm ${
                   viewMode === 'daily' ? 'bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
                 }`}
+                title="Vue quotidienne"
               >
                 📅
               </button>
@@ -129,8 +142,18 @@ export default function Home() {
                 className={`px-3 py-1 rounded text-sm ${
                   viewMode === 'manage' ? 'bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
                 }`}
+                title="Gérer les habitudes"
               >
                 ⚙️
+              </button>
+              <button
+                onClick={handleViewSevenDays}
+                className={`px-3 py-1 rounded text-sm ${
+                  viewMode === 'sevenDays' ? 'bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
+                }`}
+                title="Vue 7 jours"
+              >
+                📊
               </button>
             </div>
           </div>
@@ -188,16 +211,32 @@ export default function Home() {
             </div>
           )}
 
+          {viewMode === 'sevenDays' && (
+            <SevenDaysView
+              habits={allHabits}
+              onClose={handleCloseSevenDays}
+            />
+          )}
+
           {viewMode === 'manage' && (
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-900">Gérer les habitudes</h2>
-                <button
-                  onClick={() => setViewMode('daily')}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={handleViewSevenDays}
+                    className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                    title="Voir les 7 derniers jours"
+                  >
+                    📊 7 jours
+                  </button>
+                  <button
+                    onClick={() => setViewMode('daily')}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {/* Liste des habitudes */}

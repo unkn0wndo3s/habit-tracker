@@ -148,4 +148,48 @@ export class HabitStorage {
     
     this.saveCompletions(updatedCompletions);
   }
+
+  /**
+   * Récupère l'état des 7 derniers jours pour une habitude donnée
+   * Retourne un tableau de 7 éléments représentant les 7 derniers jours (du plus ancien au plus récent)
+   */
+  static getHabitLast7Days(habitId: string): Array<{
+    date: Date;
+    dateKey: string;
+    isScheduled: boolean; // L'habitude était-elle programmée ce jour-là ?
+    isCompleted: boolean; // L'habitude a-t-elle été complétée ce jour-là ?
+  }> {
+    const habit = this.loadHabits().find(h => h.id === habitId);
+    if (!habit) {
+      return [];
+    }
+
+    const completions = this.loadCompletions();
+    const today = new Date();
+    const result: Array<{
+      date: Date;
+      dateKey: string;
+      isScheduled: boolean;
+      isCompleted: boolean;
+    }> = [];
+
+    // Générer les 7 derniers jours (du plus ancien au plus récent)
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateKey = getDateKey(date);
+      const dayOfWeek = getDayOfWeek(date);
+      const isScheduled = habit.targetDays.includes(dayOfWeek);
+      const isCompleted = completions[dateKey]?.includes(habitId) || false;
+
+      result.push({
+        date,
+        dateKey,
+        isScheduled,
+        isCompleted
+      });
+    }
+
+    return result;
+  }
 }
