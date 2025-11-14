@@ -19,9 +19,10 @@ export class HabitStorage {
       if (!stored) return [];
       
       const habits = JSON.parse(stored);
-      // Convertir les dates string en objets Date
+      // Convertir les dates string en objets Date et s'assurer que tags existe
       return habits.map((habit: Habit) => ({
         ...habit,
+        tags: habit.tags || [],
         createdAt: new Date(habit.createdAt)
       }));
     } catch (error) {
@@ -32,8 +33,15 @@ export class HabitStorage {
 
   static addHabit(habit: Omit<Habit, 'id' | 'createdAt'>): Habit {
     const habits = this.loadHabits();
+    // Normaliser les tags (minuscules, sans doublons)
+    const normalizedTags = (habit.tags || [])
+      .map(tag => tag.trim().toLowerCase())
+      .filter(tag => tag.length > 0)
+      .filter((tag, index, array) => array.indexOf(tag) === index); // Supprimer les doublons
+    
     const newHabit: Habit = {
       ...habit,
+      tags: normalizedTags,
       id: crypto.randomUUID(),
       createdAt: new Date()
     };
@@ -109,9 +117,18 @@ export class HabitStorage {
       return null;
     }
     
+    // Normaliser les tags si présents dans les updates
+    const normalizedUpdates = { ...updates };
+    if (normalizedUpdates.tags !== undefined) {
+      normalizedUpdates.tags = (normalizedUpdates.tags || [])
+        .map(tag => tag.trim().toLowerCase())
+        .filter(tag => tag.length > 0)
+        .filter((tag, index, array) => array.indexOf(tag) === index); // Supprimer les doublons
+    }
+    
     habits[index] = {
       ...habits[index],
-      ...updates
+      ...normalizedUpdates
     };
     
     this.saveHabits(habits);

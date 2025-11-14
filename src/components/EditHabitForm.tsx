@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Habit, DayOfWeek, DAYS_OF_WEEK } from '@/types/habit';
+import { HabitStorage } from '@/services/habitStorage';
+import TagsInput from './TagsInput';
 
 interface EditHabitFormProps {
   habit: Habit;
@@ -14,13 +16,19 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
   const [name, setName] = useState(habit.name);
   const [description, setDescription] = useState(habit.description || '');
   const [targetDays, setTargetDays] = useState<DayOfWeek[]>(habit.targetDays);
+  const [tags, setTags] = useState<string[]>(habit.tags || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; description?: string; targetDays?: string }>({});
+  
+  // Récupérer tous les tags existants pour les suggestions
+  const allHabits = HabitStorage.loadHabits();
+  const allTags = Array.from(new Set(allHabits.flatMap(h => h.tags || [])));
 
   useEffect(() => {
     setName(habit.name);
     setDescription(habit.description || '');
     setTargetDays(habit.targetDays);
+    setTags(habit.tags || []);
   }, [habit]);
 
   const handleDayToggle = (day: DayOfWeek) => {
@@ -66,7 +74,8 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
         ...habit,
         name: name.trim(),
         description: description.trim() || undefined,
-        targetDays
+        targetDays,
+        tags
       };
 
       onHabitUpdated(updatedHabit);
@@ -151,6 +160,15 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
         {errors.targetDays && (
           <p className="text-sm text-red-600 mt-1">{errors.targetDays}</p>
         )}
+      </div>
+
+      {/* Tags */}
+      <div>
+        <TagsInput
+          tags={tags}
+          onChange={setTags}
+          availableTags={allTags}
+        />
       </div>
 
       {/* Boutons d'action */}

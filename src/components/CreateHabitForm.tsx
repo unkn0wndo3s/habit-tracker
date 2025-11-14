@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Habit, DayOfWeek, DAYS_OF_WEEK } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
+import TagsInput from './TagsInput';
 
 interface CreateHabitFormProps {
   onHabitCreated: (habit: Habit) => void;
@@ -13,8 +14,13 @@ export default function CreateHabitForm({ onHabitCreated, onError }: CreateHabit
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [targetDays, setTargetDays] = useState<DayOfWeek[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; description?: string; targetDays?: string }>({});
+  
+  // Récupérer tous les tags existants pour les suggestions
+  const allHabits = HabitStorage.loadHabits();
+  const allTags = Array.from(new Set(allHabits.flatMap(habit => habit.tags || [])));
 
   const handleDayToggle = (day: DayOfWeek) => {
     setTargetDays(prev => 
@@ -58,7 +64,8 @@ export default function CreateHabitForm({ onHabitCreated, onError }: CreateHabit
       const newHabit = HabitStorage.addHabit({
         name: name.trim(),
         description: description.trim() || undefined,
-        targetDays
+        targetDays,
+        tags
       });
 
       onHabitCreated(newHabit);
@@ -67,6 +74,7 @@ export default function CreateHabitForm({ onHabitCreated, onError }: CreateHabit
       setName('');
       setDescription('');
       setTargetDays([]);
+      setTags([]);
       setErrors({});
     } catch (error) {
       console.error('Erreur lors de la création de l\'habitude:', error);
@@ -149,6 +157,15 @@ export default function CreateHabitForm({ onHabitCreated, onError }: CreateHabit
         {errors.targetDays && (
           <p className="text-sm text-red-600 mt-1">{errors.targetDays}</p>
         )}
+      </div>
+
+      {/* Tags */}
+      <div>
+        <TagsInput
+          tags={tags}
+          onChange={setTags}
+          availableTags={allTags}
+        />
       </div>
 
       {/* Bouton de soumission */}

@@ -3,6 +3,7 @@ export interface Habit {
   name: string;
   description?: string;
   targetDays: DayOfWeek[];
+  tags: string[];
   createdAt: Date;
 }
 

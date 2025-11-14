@@ -9,6 +9,8 @@ import DailyHabitsList from '@/components/DailyHabitsList';
 import DateNavigation from '@/components/DateNavigation';
 import SevenDaysView from '@/components/SevenDaysView';
 import StreakBadge from '@/components/StreakBadge';
+import TagsFilter from '@/components/TagsFilter';
+import TagsSection from '@/components/TagsSection';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import UndoButton from '@/components/UndoButton';
 import Toast from '@/components/Toast';
@@ -25,6 +27,7 @@ export default function Home() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
   const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('daily');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const { toasts, showSuccess, showError, removeToast } = useToast();
   const { undoState, registerUndo, undo, clearUndo, canUndo } = useUndo<Habit>();
   const [undoRemainingTime, setUndoRemainingTime] = useState(0);
@@ -32,6 +35,28 @@ export default function Home() {
   const loadHabits = useCallback(() => {
     setAllHabits(HabitStorage.loadHabits());
   }, []);
+
+  // Calculer les tags et leurs compteurs
+  const tagsWithCount = useCallback(() => {
+    const tagCounts: Record<string, number> = {};
+    allHabits.forEach(habit => {
+      (habit.tags || []).forEach(tag => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+    });
+    
+    return Object.entries(tagCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count); // Trier par nombre décroissant
+  }, [allHabits]);
+
+  // Filtrer les habitudes par tag sélectionné
+  const filteredHabits = useCallback(() => {
+    if (!selectedTag) {
+      return allHabits;
+    }
+    return allHabits.filter(habit => (habit.tags || []).includes(selectedTag));
+  }, [allHabits, selectedTag]);
 
   const loadDailyHabits = useCallback(() => {
     const habits = HabitStorage.getHabitsForDate(currentDate);
@@ -86,15 +111,17 @@ export default function Home() {
     // Sauvegarder l'ancienne version pour l'annulation
     const oldHabit = allHabits.find(h => h.id === updatedHabit.id);
     
-    const success = HabitStorage.updateHabit(updatedHabit.id, {
+    const updated = HabitStorage.updateHabit(updatedHabit.id, {
       name: updatedHabit.name,
       description: updatedHabit.description,
-      targetDays: updatedHabit.targetDays
+      targetDays: updatedHabit.targetDays,
+      tags: updatedHabit.tags || []
     });
     
-    if (success) {
+    if (updated) {
+      // Utiliser l'habitude retournée par updateHabit qui contient les tags normalisés
       setAllHabits(prev => prev.map(habit => 
-        habit.id === updatedHabit.id ? updatedHabit : habit
+        habit.id === updatedHabit.id ? updated : habit
       ));
       setEditingHabit(null);
       setViewMode('manage');
@@ -319,22 +346,39 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Filtre par tags */}
+              {tagsWithCount().length > 0 && (
+                <TagsFilter
+                  selectedTag={selectedTag}
+                  onTagSelect={setSelectedTag}
+                  tags={tagsWithCount()}
+                />
+              )}
+
+              {/* Section des tags - affichée en haut pour une meilleure visibilité */}
+              {tagsWithCount().length > 0 && (
+                <TagsSection
+                  tags={tagsWithCount()}
+                  onTagClick={(tag) => setSelectedTag(tag)}
+                />
+              )}
+
               {/* Liste des habitudes */}
-              {allHabits.length === 0 ? (
+              {filteredHabits().length === 0 ? (
                 <div className="text-center py-8">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span className="text-2xl">📝</span>
                   </div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Aucune habitude créée
+                    {selectedTag ? `Aucune habitude avec le tag "${selectedTag}"` : 'Aucune habitude créée'}
                   </h3>
                   <p className="text-gray-500 text-sm mb-4">
-                    Commencez par créer votre première habitude
+                    {selectedTag ? 'Essayez un autre tag ou créez une nouvelle habitude' : 'Commencez par créer votre première habitude'}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {allHabits.map((habit) => (
+                  {filteredHabits().map((habit) => (
                     <div key={habit.id} className="bg-gray-50 rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -355,6 +399,18 @@ export default function Home() {
                               </span>
                             ))}
                           </div>
+                          {habit.tags && habit.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {habit.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full"
+                                >
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <div className="flex space-x-1 ml-3">
                           <button
