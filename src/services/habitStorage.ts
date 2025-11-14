@@ -43,6 +43,64 @@ export class HabitStorage {
     return newHabit;
   }
 
+  /**
+   * Restaure une habitude avec son ID et sa date de création originaux
+   * Utile pour l'annulation de suppression
+   */
+  static restoreHabit(habit: Habit): Habit {
+    const habits = this.loadHabits();
+    
+    // Vérifier si l'habitude existe déjà
+    if (habits.find(h => h.id === habit.id)) {
+      return habit; // Déjà présente
+    }
+    
+    // Restaurer l'habitude avec son ID original
+    habits.push(habit);
+    this.saveHabits(habits);
+    return habit;
+  }
+
+  /**
+   * Sauvegarde les complétions d'une habitude spécifique
+   * Retourne un objet avec les dateKeys et les complétions
+   */
+  static saveHabitCompletions(habitId: string): Record<string, boolean> {
+    const completions = this.loadCompletions();
+    const habitCompletions: Record<string, boolean> = {};
+    
+    // Parcourir toutes les dates et sauvegarder celles où l'habitude est complétée
+    Object.keys(completions).forEach(dateKey => {
+      if (completions[dateKey].includes(habitId)) {
+        habitCompletions[dateKey] = true;
+      }
+    });
+    
+    return habitCompletions;
+  }
+
+  /**
+   * Restaure les complétions d'une habitude spécifique
+   */
+  static restoreHabitCompletions(habitId: string, completions: Record<string, boolean>): void {
+    const allCompletions = this.loadCompletions();
+    
+    // Restaurer chaque complétion
+    Object.keys(completions).forEach(dateKey => {
+      if (completions[dateKey]) {
+        if (!allCompletions[dateKey]) {
+          allCompletions[dateKey] = [];
+        }
+        // Ajouter l'habitude si elle n'est pas déjà présente
+        if (!allCompletions[dateKey].includes(habitId)) {
+          allCompletions[dateKey].push(habitId);
+        }
+      }
+    });
+    
+    this.saveCompletions(allCompletions);
+  }
+
   static updateHabit(id: string, updates: Partial<Omit<Habit, 'id' | 'createdAt'>>): Habit | null {
     const habits = this.loadHabits();
     const index = habits.findIndex(habit => habit.id === id);
@@ -209,7 +267,7 @@ export class HabitStorage {
     const completions = this.loadCompletions();
     const today = new Date();
     let streak = 0;
-    let currentDate = new Date(today);
+    const currentDate = new Date(today);
     const todayKey = getDateKey(today);
     
     // Parcourir les jours en remontant depuis aujourd'hui

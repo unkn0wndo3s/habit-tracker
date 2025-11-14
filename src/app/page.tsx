@@ -10,8 +10,10 @@ import DateNavigation from '@/components/DateNavigation';
 import SevenDaysView from '@/components/SevenDaysView';
 import StreakBadge from '@/components/StreakBadge';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import UndoButton from '@/components/UndoButton';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
+import { useUndo } from '@/hooks/useUndo';
 
 type ViewMode = 'daily' | 'create' | 'manage' | 'edit' | 'sevenDays';
 
@@ -24,6 +26,8 @@ export default function Home() {
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
   const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('daily');
   const { toasts, showSuccess, showError, removeToast } = useToast();
+  const { undoState, registerUndo, undo, clearUndo, canUndo } = useUndo<Habit>();
+  const [undoRemainingTime, setUndoRemainingTime] = useState(0);
 
   const loadHabits = useCallback(() => {
     setAllHabits(HabitStorage.loadHabits());
@@ -46,6 +50,32 @@ export default function Home() {
     }
   }, [currentDate, allHabits, viewMode, loadDailyHabits]);
 
+  // Gérer le timer pour le bouton d'annulation
+  useEffect(() => {
+    if (!undoState) {
+      setUndoRemainingTime(0);
+      return;
+    }
+
+    const startTime = undoState.timestamp;
+    const duration = 5000; // 5 secondes
+    
+    const updateTimer = () => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, duration - elapsed);
+      setUndoRemainingTime(remaining);
+      
+      if (remaining <= 0) {
+        clearUndo();
+      }
+    };
+
+    const interval = setInterval(updateTimer, 100);
+    updateTimer(); // Appel initial
+
+    return () => clearInterval(interval);
+  }, [undoState, clearUndo]);
+
   const handleHabitCreated = (newHabit: Habit) => {
     setAllHabits(prev => [...prev, newHabit]);
     setViewMode('daily');
@@ -53,6 +83,9 @@ export default function Home() {
   };
 
   const handleHabitUpdated = (updatedHabit: Habit) => {
+    // Sauvegarder l'ancienne version pour l'annulation
+    const oldHabit = allHabits.find(h => h.id === updatedHabit.id);
+    
     const success = HabitStorage.updateHabit(updatedHabit.id, {
       name: updatedHabit.name,
       description: updatedHabit.description,
@@ -66,6 +99,11 @@ export default function Home() {
       setEditingHabit(null);
       setViewMode('manage');
       showSuccess('Habitude modifiée avec succès !');
+      
+      // Enregistrer pour annulation si on avait une ancienne version
+      if (oldHabit) {
+        registerUndo('modification', oldHabit);
+      }
     } else {
       showError('Erreur lors de la modification de l\'habitude');
     }
@@ -98,13 +136,54 @@ export default function Home() {
   const confirmDeleteHabit = () => {
     if (!habitToDelete) return;
     
+    // Sauvegarder l'habitude et ses complétions pour l'annulation
+    const habitToRestore = { ...habitToDelete };
+    const completions = HabitStorage.saveHabitCompletions(habitToDelete.id);
+    
     const success = HabitStorage.deleteHabit(habitToDelete.id);
     if (success) {
       setAllHabits(prev => prev.filter(habit => habit.id !== habitToDelete.id));
       setHabitToDelete(null);
       showSuccess('Habitude supprimée avec succès !');
+      
+      // Enregistrer pour annulation avec les complétions
+      registerUndo('suppression', habitToRestore, { completions });
     } else {
       showError('Erreur lors de la suppression de l\'habitude');
+    }
+  };
+
+  const handleUndo = () => {
+    const undoResult = undo();
+    if (!undoResult) return;
+
+    if (undoResult.action === 'suppression') {
+      // Restaurer l'habitude supprimée avec son ID original
+      const habit = undoResult.data as Habit;
+      const restoredHabit = HabitStorage.restoreHabit(habit);
+      
+      // Restaurer les complétions si elles ont été sauvegardées
+      if (undoResult.metadata?.completions) {
+        HabitStorage.restoreHabitCompletions(habit.id, undoResult.metadata.completions);
+      }
+      
+      setAllHabits(prev => [...prev, restoredHabit]);
+      showSuccess('Habitude restaurée avec succès !');
+    } else if (undoResult.action === 'modification') {
+      // Restaurer l'ancienne version
+      const oldHabit = undoResult.data as Habit;
+      const success = HabitStorage.updateHabit(oldHabit.id, {
+        name: oldHabit.name,
+        description: oldHabit.description,
+        targetDays: oldHabit.targetDays
+      });
+      
+      if (success) {
+        setAllHabits(prev => prev.map(habit => 
+          habit.id === oldHabit.id ? oldHabit : habit
+        ));
+        showSuccess('Modification annulée avec succès !');
+      }
     }
   };
 
@@ -336,6 +415,21 @@ export default function Home() {
             onClose={() => removeToast(toast.id)}
           />
         ))}
+
+        {/* Bouton d'annulation */}
+        {canUndo && undoState && (
+          <UndoButton
+            onUndo={handleUndo}
+            action={
+              undoState.action === 'suppression'
+                ? 'Habitude supprimée'
+                : undoState.action === 'modification'
+                ? 'Habitude modifiée'
+                : 'Action effectuée'
+            }
+            remainingTime={undoRemainingTime}
+          />
+        )}
       </div>
     </div>
   );
