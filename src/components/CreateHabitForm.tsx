@@ -90,7 +90,7 @@ export default function CreateHabitForm({ onHabitCreated, onError }: CreateHabit
           onChange={(e) => setName(e.target.value)}
           placeholder="Ex: Méditation, Sport, Lecture..."
           maxLength={50}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+          className={`text-black w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
             errors.name ? 'border-red-300' : 'border-gray-300'
           }`}
           required
@@ -112,7 +112,7 @@ export default function CreateHabitForm({ onHabitCreated, onError }: CreateHabit
           placeholder="Décrivez votre habitude..."
           rows={3}
           maxLength={200}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
+          className={`text-black w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
             errors.description ? 'border-red-300' : 'border-gray-300'
           }`}
         />
