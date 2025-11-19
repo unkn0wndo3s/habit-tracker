@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Habit, DailyHabit } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
 import CreateHabitForm from '@/components/CreateHabitForm';
@@ -23,6 +23,11 @@ import { cn } from '@/lib/utils';
 
 type ViewMode = 'daily' | 'create' | 'manage' | 'edit' | 'sevenDays';
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
+
 export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -33,12 +38,15 @@ export default function Home() {
   const [duplicatingHabit, setDuplicatingHabit] = useState<Habit | null>(null);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [importFileData, setImportFileData] = useState<any>(null);
+  const [canInstallPWA, setCanInstallPWA] = useState(false);
+  const [isAppInstalled, setIsAppInstalled] = useState(false);
   const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('daily');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const { toasts, showSuccess, showError, removeToast } = useToast();
   const { undoState, registerUndo, undo, clearUndo, canUndo } = useUndo<Habit>();
   const [undoRemainingTime, setUndoRemainingTime] = useState(0);
+  const installPromptEvent = useRef<BeforeInstallPromptEvent | null>(null);
 
   const loadHabits = useCallback(() => {
     setAllHabits(HabitStorage.loadHabits());
@@ -101,6 +109,94 @@ export default function Home() {
       loadDailyHabits();
     }
   }, [currentDate, allHabits, viewMode, loadDailyHabits]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      installPromptEvent.current = event as BeforeInstallPromptEvent;
+      setCanInstallPWA(true);
+    };
+
+    const handleAppInstalled = () => {
+      installPromptEvent.current = null;
+      setCanInstallPWA(false);
+      setIsAppInstalled(true);
+      showSuccess("TrackIt est maintenant installée sur votre écran d'accueil !");
+    };
+
+    const standaloneMatcher = window.matchMedia('(display-mode: standalone)');
+    const syncStandalone = () => {
+      const installed =
+        standaloneMatcher.matches || (window.navigator as any).standalone === true;
+      setIsAppInstalled(installed);
+      if (installed) {
+        setCanInstallPWA(false);
+      }
+    };
+
+    syncStandalone();
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+    standaloneMatcher.addEventListener('change', syncStandalone);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+      standaloneMatcher.removeEventListener('change', syncStandalone);
+    };
+  }, [showSuccess]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return;
+    }
+
+    let hasAcknowledgedFirstChange = false;
+
+    const controllerChangeHandler = () => {
+      if (!hasAcknowledgedFirstChange) {
+        hasAcknowledgedFirstChange = true;
+        return;
+      }
+      showSuccess('TrackIt a été mise à jour automatiquement.');
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', controllerChangeHandler);
+
+    const registerServiceWorker = async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('/sw.js');
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (!newWorker) {
+            return;
+          }
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showSuccess('Une nouvelle version est disponible, elle sera appliquée automatiquement.');
+              newWorker.postMessage({ type: 'SKIP_WAITING' });
+            }
+          });
+        });
+      } catch (error) {
+        console.error('Service worker registration failed:', error);
+      }
+    };
+
+    registerServiceWorker();
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', controllerChangeHandler);
+    };
+  }, [showSuccess]);
 
   // Gérer le timer pour le bouton d'annulation
   useEffect(() => {
@@ -360,6 +456,29 @@ export default function Home() {
     setImportFileData(null);
   };
 
+  const handleInstallApp = async () => {
+    const promptEvent = installPromptEvent.current;
+    if (!promptEvent) {
+      return;
+    }
+
+    try {
+      promptEvent.prompt();
+      const choiceResult = await promptEvent.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        showSuccess("Installation en cours ! TrackIt sera disponible depuis votre écran d'accueil.");
+      } else {
+        showError("Installation annulée.");
+      }
+    } catch (error) {
+      console.error('Erreur lors de la tentative d’installation:', error);
+      showError("Impossible d'installer l'application pour le moment.");
+    } finally {
+      installPromptEvent.current = null;
+      setCanInstallPWA(false);
+    }
+  };
+
   const confirmDeleteHabit = () => {
     if (!habitToDelete) return;
     
@@ -405,7 +524,7 @@ export default function Home() {
         targetDays: oldHabit.targetDays
       });
       
-      if (success) {
+    if (success) {
         setAllHabits(prev => prev.map(habit => 
           habit.id === oldHabit.id ? oldHabit : habit
         ));
@@ -461,10 +580,31 @@ export default function Home() {
     }
   ];
 
+  const shouldDisplayInstallCTA = canInstallPWA && !isAppInstalled;
+
   return (
     <div className="min-h-screen pb-28 pt-6">
       <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col gap-5 px-4 pb-10">
         <main className="flex-1 space-y-4 pt-2">
+          {shouldDisplayInstallCTA && (
+            <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-white">
+              <CardContent className="flex flex-col gap-3 p-4">
+                <div>
+                  <p className="text-sm font-semibold text-indigo-900">Installer l'app</p>
+                  <p className="text-xs text-slate-600">
+                    Ajoutez TrackIt sur votre écran d'accueil pour un accès hors ligne et en plein écran.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleInstallApp}
+                  className="w-full bg-indigo-600 text-white hover:bg-indigo-500"
+                >
+                  Installer l'app
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {viewMode === 'daily' && (
             <>
               <DateNavigation currentDate={currentDate} onDateChange={handleDateChange} />
@@ -564,7 +704,7 @@ export default function Home() {
                     className="pr-10"
                   />
                   {searchQuery && (
-                    <button
+                <button
                       type="button"
                       onClick={() => setSearchQuery('')}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
@@ -573,9 +713,9 @@ export default function Home() {
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                    </button>
+                </button>
                   )}
-                </div>
+              </div>
 
                 {tagsWithCount().length > 0 && (
                   <TagsFilter selectedTag={selectedTag} onTagSelect={setSelectedTag} tags={tagsWithCount()} />
@@ -590,35 +730,35 @@ export default function Home() {
                         : selectedTag 
                         ? `Aucune habitude avec le tag "${selectedTag}"` 
                         : 'Aucune habitude créée'}
-                    </h3>
+                  </h3>
                     <p className="mt-2 text-sm text-slate-500">
                       {searchQuery.trim() 
                         ? 'Essayez une autre recherche ou effacez le champ pour voir toutes les habitudes' 
                         : selectedTag 
                         ? 'Essayez un autre tag ou créez une nouvelle habitude' 
                         : 'Commencez par définir votre première habitude'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
                     {filteredHabits().map((habit) => (
                       <div
                         key={habit.id}
                         className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 shadow-inner shadow-white/50"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
+                        <div className="flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="text-base font-semibold text-slate-900">{habit.name}</h3>
                               <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
                             </div>
-                            {habit.description && (
+                          {habit.description && (
                               <p className="mt-1 text-sm text-slate-600">{habit.description}</p>
-                            )}
+                          )}
                             <div className="mt-3 flex flex-wrap gap-1.5">
-                              {habit.targetDays.map((day) => (
+                            {habit.targetDays.map((day) => (
                                 <Badge key={day} variant="outline" className="border-indigo-100 bg-white text-xs text-indigo-600">
-                                  {day.charAt(0).toUpperCase() + day.slice(1)}
+                                {day.charAt(0).toUpperCase() + day.slice(1)}
                                 </Badge>
                               ))}
                             </div>
@@ -628,15 +768,15 @@ export default function Home() {
                                   <Badge key={tag} variant="secondary" className="text-xs text-slate-600">
                                     #{tag}
                                   </Badge>
-                                ))}
-                              </div>
-                            )}
+                            ))}
                           </div>
+                            )}
+                        </div>
                           <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleEditHabit(habit)}
+                            onClick={() => handleEditHabit(habit)}
                               className="text-slate-500 hover:text-indigo-600"
                               aria-label="Modifier l'habitude"
                             >
@@ -669,12 +809,12 @@ export default function Home() {
                             >
                               🗑️
                             </Button>
-                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+              </div>
+            ))}
+          </div>
+              )}
 
                 <Button className="w-full" onClick={() => setViewMode('create')}>
                   + Créer une habitude
@@ -769,7 +909,7 @@ export default function Home() {
                         </div>
                       ))}
                     </div>
-                  </div>
+            </div>
                 )}
               </CardContent>
             </Card>
