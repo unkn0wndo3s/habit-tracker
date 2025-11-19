@@ -13,6 +13,8 @@ import TagsFilter from '@/components/TagsFilter';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import UndoButton from '@/components/UndoButton';
 import Toast from '@/components/Toast';
+import SettingsView from '@/components/SettingsView';
+import { NotificationService } from '@/services/notificationService';
 import { useToast } from '@/hooks/useToast';
 import { useUndo } from '@/hooks/useUndo';
 import { Button } from '@/components/ui/button';
@@ -21,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-type ViewMode = 'daily' | 'create' | 'manage' | 'edit' | 'sevenDays';
+type ViewMode = 'daily' | 'create' | 'manage' | 'edit' | 'sevenDays' | 'settings';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -102,6 +104,8 @@ export default function Home() {
 
   useEffect(() => {
     loadHabits();
+    // Planifier toutes les notifications au chargement
+    NotificationService.scheduleAllNotifications();
   }, [loadHabits]);
 
   useEffect(() => {
@@ -226,6 +230,12 @@ export default function Home() {
 
   const handleHabitCreated = (newHabit: Habit) => {
     setAllHabits(prev => [...prev, newHabit]);
+    
+    // Planifier les notifications si activées
+    if (newHabit.notificationEnabled) {
+      NotificationService.scheduleNotification(newHabit);
+    }
+    
     if (duplicatingHabit) {
       showSuccess('Habitude dupliquée avec succès !');
       setDuplicatingHabit(null);
@@ -243,7 +253,9 @@ export default function Home() {
       name: updatedHabit.name,
       description: updatedHabit.description,
       targetDays: updatedHabit.targetDays,
-      tags: updatedHabit.tags || []
+      tags: updatedHabit.tags || [],
+      notificationEnabled: updatedHabit.notificationEnabled,
+      notificationTime: updatedHabit.notificationTime
     });
     
     if (updated) {
@@ -251,6 +263,14 @@ export default function Home() {
       setAllHabits(prev => prev.map(habit => 
         habit.id === updatedHabit.id ? updated : habit
       ));
+      
+      // Mettre à jour les notifications
+      if (updated.notificationEnabled) {
+        NotificationService.scheduleNotification(updated);
+      } else {
+        NotificationService.cancelNotification(updated.id);
+      }
+      
       setEditingHabit(null);
       setViewMode('manage');
       showSuccess('Habitude modifiée avec succès !');
@@ -573,6 +593,12 @@ export default function Home() {
       action: () => setViewMode('manage')
     },
     {
+      key: 'settings',
+      label: 'Paramètres',
+      icon: '🔔',
+      action: () => setViewMode('settings')
+    },
+    {
       key: 'stats',
       label: '7 jours',
       icon: '📊',
@@ -675,6 +701,14 @@ export default function Home() {
                 <SevenDaysView habits={allHabits.filter(h => !h.archived)} onClose={handleCloseSevenDays} />
               </CardContent>
             </Card>
+          )}
+
+          {viewMode === 'settings' && (
+            <SettingsView
+              onClose={() => setViewMode('daily')}
+              onError={showError}
+              onSuccess={showSuccess}
+            />
           )}
 
           {viewMode === 'manage' && (

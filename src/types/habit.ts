@@ -6,6 +6,8 @@ export interface Habit {
   tags: string[];
   archived?: boolean;
   createdAt: Date;
+  notificationEnabled?: boolean;
+  notificationTime?: string; // Format HH:mm (ex: "09:00")
 }
 
 export interface DailyHabit extends Habit {

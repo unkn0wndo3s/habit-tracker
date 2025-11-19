@@ -26,11 +26,13 @@ export class HabitStorage {
       if (!stored) return [];
       
       const habits = JSON.parse(stored);
-      // Convertir les dates string en objets Date et s'assurer que tags et archived existent
+      // Convertir les dates string en objets Date et s'assurer que tags, archived et notifications existent
       return habits.map((habit: Habit) => ({
         ...habit,
         tags: habit.tags || [],
         archived: habit.archived || false,
+        notificationEnabled: habit.notificationEnabled ?? false,
+        notificationTime: habit.notificationTime,
         createdAt: new Date(habit.createdAt)
       }));
     } catch (error) {
@@ -51,6 +53,8 @@ export class HabitStorage {
       ...habit,
       tags: normalizedTags,
       archived: false,
+      notificationEnabled: habit.notificationEnabled ?? false,
+      notificationTime: habit.notificationTime,
       id: crypto.randomUUID(),
       createdAt: new Date()
     };

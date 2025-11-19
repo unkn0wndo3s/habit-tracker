@@ -18,6 +18,8 @@ interface CreateHabitFormProps {
     description?: string;
     targetDays?: DayOfWeek[];
     tags?: string[];
+    notificationEnabled?: boolean;
+    notificationTime?: string;
   };
 }
 
@@ -26,6 +28,8 @@ export default function CreateHabitForm({ onHabitCreated, onError, initialValues
   const [description, setDescription] = useState(initialValues?.description || '');
   const [targetDays, setTargetDays] = useState<DayOfWeek[]>(initialValues?.targetDays || []);
   const [tags, setTags] = useState<string[]>(initialValues?.tags || []);
+  const [notificationEnabled, setNotificationEnabled] = useState(initialValues?.notificationEnabled || false);
+  const [notificationTime, setNotificationTime] = useState(initialValues?.notificationTime || '09:00');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; description?: string; targetDays?: string }>({});
 
@@ -36,6 +40,8 @@ export default function CreateHabitForm({ onHabitCreated, onError, initialValues
       setDescription(initialValues.description || '');
       setTargetDays(initialValues.targetDays || []);
       setTags(initialValues.tags || []);
+      setNotificationEnabled(initialValues.notificationEnabled || false);
+      setNotificationTime(initialValues.notificationTime || '09:00');
     }
   }, [initialValues]);
   
@@ -88,7 +94,9 @@ export default function CreateHabitForm({ onHabitCreated, onError, initialValues
         name: name.trim(),
         description: description.trim() || undefined,
         targetDays,
-        tags
+        tags,
+        notificationEnabled: notificationEnabled,
+        notificationTime: notificationEnabled ? notificationTime : undefined
       });
 
       onHabitCreated(newHabit);
@@ -99,6 +107,8 @@ export default function CreateHabitForm({ onHabitCreated, onError, initialValues
         setDescription('');
         setTargetDays([]);
         setTags([]);
+        setNotificationEnabled(false);
+        setNotificationTime('09:00');
       }
       setErrors({});
     } catch (error) {
@@ -189,6 +199,52 @@ export default function CreateHabitForm({ onHabitCreated, onError, initialValues
           onChange={setTags}
           availableTags={allTags}
         />
+      </div>
+
+      {/* Notifications */}
+      <div className="space-y-4 border-t border-slate-200 pt-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <label htmlFor="notificationEnabled" className="text-sm font-medium text-slate-700">
+              Activer les notifications
+            </label>
+            <p className="text-xs text-slate-500 mt-1">
+              Recevez un rappel pour cette habitude
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNotificationEnabled(!notificationEnabled)}
+            className={cn(
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
+              notificationEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+            )}
+            role="switch"
+            aria-checked={notificationEnabled}
+          >
+            <span
+              className={cn(
+                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                notificationEnabled ? 'translate-x-6' : 'translate-x-1'
+              )}
+            />
+          </button>
+        </div>
+
+        {notificationEnabled && (
+          <div className="space-y-2">
+            <label htmlFor="notificationTime" className="text-sm font-medium text-slate-700">
+              Heure du rappel
+            </label>
+            <Input
+              id="notificationTime"
+              type="time"
+              value={notificationTime}
+              onChange={(e) => setNotificationTime(e.target.value)}
+              className="w-full"
+            />
+          </div>
+        )}
       </div>
 
       {/* Bouton de soumission */}
