@@ -24,13 +24,13 @@ export default function Toast({ message, type = 'success', duration = 3000, onCl
   const getTypeClasses = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white text-emerald-900 shadow-emerald-200/60';
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'border border-rose-200 bg-gradient-to-r from-rose-50 to-white text-rose-900 shadow-rose-200/60';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'border border-indigo-200 bg-gradient-to-r from-indigo-50 to-white text-indigo-900 shadow-indigo-200/60';
       default:
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white text-emerald-900';
     }
   };
 
@@ -61,11 +61,11 @@ export default function Toast({ message, type = 'success', duration = 3000, onCl
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 max-w-sm w-full transform transition-all duration-300 ${
+      className={`fixed top-4 right-4 z-50 w-full max-w-sm transform transition-all duration-300 ${
         isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}
     >
-      <div className={`flex items-center p-4 rounded-lg border shadow-lg ${getTypeClasses()}`}>
+      <div className={`flex items-center gap-3 rounded-2xl p-4 shadow-xl shadow-slate-900/10 backdrop-blur ${getTypeClasses()}`}>
         <div className="flex-shrink-0">
           {getIcon()}
         </div>
@@ -77,9 +77,9 @@ export default function Toast({ message, type = 'success', duration = 3000, onCl
             setIsVisible(false);
             setTimeout(onClose, 300);
           }}
-          className="ml-3 flex-shrink-0 text-gray-400 hover:text-gray-600"
+          className="ml-3 flex-shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-white/60 hover:text-slate-700"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>

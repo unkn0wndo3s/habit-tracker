@@ -10,12 +10,15 @@ import DateNavigation from '@/components/DateNavigation';
 import SevenDaysView from '@/components/SevenDaysView';
 import StreakBadge from '@/components/StreakBadge';
 import TagsFilter from '@/components/TagsFilter';
-import TagsSection from '@/components/TagsSection';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import UndoButton from '@/components/UndoButton';
 import Toast from '@/components/Toast';
 import { useToast } from '@/hooks/useToast';
 import { useUndo } from '@/hooks/useUndo';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 type ViewMode = 'daily' | 'create' | 'manage' | 'edit' | 'sevenDays';
 
@@ -224,232 +227,227 @@ export default function Home() {
     setCurrentDate(date);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-md mx-auto bg-white min-h-screen">
-          {/* Header */}
-        <header className="bg-blue-600 text-white p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">TrackIt</h1>
-              <p className="text-blue-100 text-sm">Suivez vos habitudes</p>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setViewMode('daily')}
-                className={`px-3 py-1 rounded text-sm ${
-                  viewMode === 'daily' ? 'bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
-                }`}
-                title="Vue quotidienne"
-              >
-                📅
-              </button>
-              <button
-                onClick={() => setViewMode('manage')}
-                className={`px-3 py-1 rounded text-sm ${
-                  viewMode === 'manage' ? 'bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
-                }`}
-                title="Gérer les habitudes"
-              >
-                ⚙️
-              </button>
-              <button
-                onClick={handleViewSevenDays}
-                className={`px-3 py-1 rounded text-sm ${
-                  viewMode === 'sevenDays' ? 'bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
-                }`}
-                title="Vue 7 jours"
-              >
-                📊
-              </button>
-            </div>
-          </div>
-        </header>
+  const completedToday = dailyHabits.filter((habit) => habit.isCompleted).length;
+  const completionRate = dailyHabits.length
+    ? Math.round((completedToday / dailyHabits.length) * 100)
+    : 0;
 
-        <main>
+  const navItems: Array<{
+    key: ViewMode | 'stats';
+    label: string;
+    icon: string;
+    action: () => void;
+  }> = [
+    {
+      key: 'daily',
+      label: 'Aujourd’hui',
+      icon: '📅',
+      action: () => setViewMode('daily')
+    },
+    {
+      key: 'create',
+      label: 'Créer',
+      icon: '✨',
+      action: () => setViewMode('create')
+    },
+    {
+      key: 'manage',
+      label: 'Gérer',
+      icon: '⚙️',
+      action: () => setViewMode('manage')
+    },
+    {
+      key: 'stats',
+      label: '7 jours',
+      icon: '📊',
+      action: handleViewSevenDays
+    }
+  ];
+
+  return (
+    <div className="min-h-screen pb-28 pt-6">
+      <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col gap-5 px-4 pb-10">
+        <main className="flex-1 space-y-4 pt-2">
           {viewMode === 'daily' && (
             <>
               <DateNavigation currentDate={currentDate} onDateChange={handleDateChange} />
-              <div className="p-4">
-                <DailyHabitsList
-                  date={currentDate}
-                  habits={dailyHabits}
-                  onHabitToggle={handleHabitToggle}
-                />
-              </div>
+              <Card className="bg-white/95">
+                <CardContent className="p-4">
+                  <DailyHabitsList date={currentDate} habits={dailyHabits} onHabitToggle={handleHabitToggle} />
+                </CardContent>
+              </Card>
             </>
           )}
 
           {viewMode === 'create' && (
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-gray-900">Créer une habitude</h2>
-                <button
-                  onClick={() => setViewMode('daily')}
-                  className="text-gray-400 hover:text-gray-600"
-                >
+            <Card className="bg-white/95">
+              <CardHeader className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Créer une habitude</CardTitle>
+                  <CardDescription>Définissez un nom, des tags et un planning clair</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setViewMode('daily')} aria-label="Fermer le formulaire">
                   ✕
-                </button>
-              </div>
-              <CreateHabitForm 
-                onHabitCreated={handleHabitCreated} 
-                onError={showError}
-              />
-            </div>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <CreateHabitForm onHabitCreated={handleHabitCreated} onError={showError} />
+              </CardContent>
+            </Card>
           )}
 
           {viewMode === 'edit' && editingHabit && (
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-gray-900">Modifier l&apos;habitude</h2>
-                <button
-                  onClick={handleCancelEdit}
-                  className="text-gray-400 hover:text-gray-600"
-                >
+            <Card className="bg-white/95">
+              <CardHeader className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Modifier l&apos;habitude</CardTitle>
+                  <CardDescription>Ajustez les détails pour rester aligné</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" onClick={handleCancelEdit} aria-label="Fermer l'édition">
                   ✕
-                </button>
-              </div>
-              <EditHabitForm
-                habit={editingHabit}
-                onHabitUpdated={handleHabitUpdated}
-                onCancel={handleCancelEdit}
-                onError={showError}
-              />
-            </div>
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <EditHabitForm habit={editingHabit} onHabitUpdated={handleHabitUpdated} onCancel={handleCancelEdit} onError={showError} />
+              </CardContent>
+            </Card>
           )}
 
           {viewMode === 'sevenDays' && (
-            <SevenDaysView
-              habits={allHabits}
-              onClose={handleCloseSevenDays}
-            />
+            <Card className="bg-white/95">
+              <CardContent className="p-0">
+                <SevenDaysView habits={allHabits} onClose={handleCloseSevenDays} />
+              </CardContent>
+            </Card>
           )}
 
           {viewMode === 'manage' && (
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-gray-900">Gérer les habitudes</h2>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleViewSevenDays}
-                    className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-                    title="Voir les 7 derniers jours"
-                  >
-                    📊 7 jours
-                  </button>
-                  <button
-                    onClick={() => setViewMode('daily')}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
+            <Card className="bg-white/95">
+              <CardHeader className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Gérer les habitudes</CardTitle>
+                  <CardDescription>Filtrez, éditez et organisez vos rituels</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" onClick={handleViewSevenDays} aria-label="Voir la vue 7 jours">
+                    📊
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => setViewMode('daily')} aria-label="Fermer la gestion">
                     ✕
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                {tagsWithCount().length > 0 && (
+                  <TagsFilter selectedTag={selectedTag} onTagSelect={setSelectedTag} tags={tagsWithCount()} />
+                )}
 
-              {/* Filtre par tags */}
-              {tagsWithCount().length > 0 && (
-                <TagsFilter
-                  selectedTag={selectedTag}
-                  onTagSelect={setSelectedTag}
-                  tags={tagsWithCount()}
-                />
-              )}
-
-              {/* Section des tags - affichée en haut pour une meilleure visibilité */}
-              {tagsWithCount().length > 0 && (
-                <TagsSection
-                  tags={tagsWithCount()}
-                  onTagClick={(tag) => setSelectedTag(tag)}
-                />
-              )}
-
-              {/* Liste des habitudes */}
-              {filteredHabits().length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">📝</span>
+                {filteredHabits().length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-3xl">📝</div>
+                    <h3 className="text-lg font-semibold text-slate-900">
+                      {selectedTag ? `Aucune habitude avec le tag "${selectedTag}"` : 'Aucune habitude créée'}
+                    </h3>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {selectedTag ? 'Essayez un autre tag ou créez une nouvelle habitude' : 'Commencez par définir votre première habitude'}
+                    </p>
                   </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    {selectedTag ? `Aucune habitude avec le tag "${selectedTag}"` : 'Aucune habitude créée'}
-                  </h3>
-                  <p className="text-gray-500 text-sm mb-4">
-                    {selectedTag ? 'Essayez un autre tag ou créez une nouvelle habitude' : 'Commencez par créer votre première habitude'}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredHabits().map((habit) => (
-                    <div key={habit.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-medium text-gray-900">{habit.name}</h3>
-                            <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
-                          </div>
-                          {habit.description && (
-                            <p className="text-sm text-gray-600 mt-1">{habit.description}</p>
-                          )}
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {habit.targetDays.map((day) => (
-                              <span
-                                key={day}
-                                className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
-                              >
-                                {day.charAt(0).toUpperCase() + day.slice(1)}
-                              </span>
-                            ))}
-                          </div>
-                          {habit.tags && habit.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {habit.tags.map((tag) => (
-                                <span
-                                  key={tag}
-                                  className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full"
-                                >
-                                  #{tag}
-                                </span>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredHabits().map((habit) => (
+                      <div
+                        key={habit.id}
+                        className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 shadow-inner shadow-white/50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold text-slate-900">{habit.name}</h3>
+                              <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
+                            </div>
+                            {habit.description && (
+                              <p className="mt-1 text-sm text-slate-600">{habit.description}</p>
+                            )}
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {habit.targetDays.map((day) => (
+                                <Badge key={day} variant="outline" className="border-indigo-100 bg-white text-xs text-indigo-600">
+                                  {day.charAt(0).toUpperCase() + day.slice(1)}
+                                </Badge>
                               ))}
                             </div>
-                          )}
-                        </div>
-                        <div className="flex space-x-1 ml-3">
-                          <button
-                            onClick={() => handleEditHabit(habit)}
-                            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                            title="Modifier l'habitude"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteHabit(habit)}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                            title="Supprimer l'habitude"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                            {habit.tags && habit.tags.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {habit.tags.map((tag) => (
+                                  <Badge key={tag} variant="secondary" className="text-xs text-slate-600">
+                                    #{tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditHabit(habit)}
+                              className="text-slate-500 hover:text-indigo-600"
+                              aria-label="Modifier l'habitude"
+                            >
+                              ✏️
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteHabit(habit)}
+                              className="text-slate-400 hover:text-rose-600"
+                              aria-label="Supprimer l'habitude"
+                            >
+                              🗑️
+                            </Button>
+                          </div>
                         </div>
                       </div>
-              </div>
-            ))}
-          </div>
-              )}
+                    ))}
+                  </div>
+                )}
 
-              {/* Bouton pour créer une habitude */}
-              <button
-                onClick={() => setViewMode('create')}
-                className="w-full mt-4 bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-              >
-                + Créer une habitude
-              </button>
-            </div>
+                <Button className="w-full" onClick={() => setViewMode('create')}>
+                  + Créer une habitude
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </main>
 
-        {/* Modals et Toasts */}
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-4">
+          <nav className="pointer-events-auto w-full max-w-3xl px-4">
+            <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/95 px-3 py-2 shadow-lg shadow-slate-200/60">
+              {navItems.map((item) => {
+                const isActive =
+                  item.key === 'stats'
+                    ? viewMode === 'sevenDays'
+                    : viewMode === item.key;
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={item.action}
+                    className={cn(
+                      'flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-medium transition',
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-600'
+                        : 'text-slate-500 hover:text-slate-900'
+                    )}
+                  >
+                    <span className="text-lg">{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
+
         <ConfirmationModal
           isOpen={!!habitToDelete}
           onClose={() => setHabitToDelete(null)}
@@ -461,7 +459,6 @@ export default function Home() {
           variant="danger"
         />
 
-        {/* Toasts */}
         {toasts.map((toast) => (
           <Toast
             key={toast.id}
@@ -472,7 +469,6 @@ export default function Home() {
           />
         ))}
 
-        {/* Bouton d'annulation */}
         {canUndo && undoState && (
           <UndoButton
             onUndo={handleUndo}

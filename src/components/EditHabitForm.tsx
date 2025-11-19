@@ -1,9 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Habit, DayOfWeek, DAYS_OF_WEEK } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
 import TagsInput from './TagsInput';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
+import { Badge } from './ui/badge';
+import { cn } from '@/lib/utils';
 
 interface EditHabitFormProps {
   habit: Habit;
@@ -19,10 +24,12 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
   const [tags, setTags] = useState<string[]>(habit.tags || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; description?: string; targetDays?: string }>({});
-  
+
   // Récupérer tous les tags existants pour les suggestions
-  const allHabits = HabitStorage.loadHabits();
-  const allTags = Array.from(new Set(allHabits.flatMap(h => h.tags || [])));
+  const allTags = useMemo(() => {
+    const habits = HabitStorage.loadHabits();
+    return Array.from(new Set(habits.flatMap((h) => h.tags || [])));
+  }, []);
 
   useEffect(() => {
     setName(habit.name);
@@ -90,76 +97,70 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Nom de l'habitude */}
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-          Nom de l&apos;habitude * ({name.length}/50)
-        </label>
-        <input
-          type="text"
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+          <label htmlFor="name">Nom de l&apos;habitude *</label>
+          <Badge variant="secondary">{name.length}/50</Badge>
+        </div>
+        <Input
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Ex: Méditation, Sport, Lecture..."
           maxLength={50}
-          className={`text-black w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            errors.name ? 'border-red-300' : 'border-gray-300'
-          }`}
+          className={cn(errors.name && 'border-rose-300 focus-visible:ring-rose-400')}
           required
         />
-        {errors.name && (
-          <p className="text-sm text-red-600 mt-1">{errors.name}</p>
-        )}
+        {errors.name && <p className="text-sm text-rose-500">{errors.name}</p>}
       </div>
 
       {/* Description optionnelle */}
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-          Description (optionnelle) ({description.length}/200)
-        </label>
-        <textarea
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+          <label htmlFor="description">Description (optionnelle)</label>
+          <Badge variant="secondary">{description.length}/200</Badge>
+        </div>
+        <Textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Décrivez votre habitude..."
-          rows={3}
+          rows={4}
           maxLength={200}
-          className={`text-black w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none ${
-            errors.description ? 'border-red-300' : 'border-gray-300'
-          }`}
+          className={cn(errors.description && 'border-rose-300 focus-visible:ring-rose-400')}
         />
-        {errors.description && (
-          <p className="text-sm text-red-600 mt-1">{errors.description}</p>
-        )}
+        {errors.description && <p className="text-sm text-rose-500">{errors.description}</p>}
       </div>
 
       {/* Jours de la semaine */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Jours ciblés *
-        </label>
+        <p className="text-sm font-medium text-slate-700 mb-3">Jours ciblés *</p>
         <div className="grid grid-cols-2 gap-2">
-          {DAYS_OF_WEEK.map((day) => (
-            <label
-              key={day.value}
-              className={`flex items-center p-3 border rounded-md cursor-pointer transition-colors ${
-                targetDays.includes(day.value)
-                  ? 'bg-blue-50 border-blue-500 text-blue-700'
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={targetDays.includes(day.value)}
-                onChange={() => handleDayToggle(day.value)}
-                className="sr-only"
-              />
-              <span className="text-sm font-medium">{day.label}</span>
-            </label>
-          ))}
+          {DAYS_OF_WEEK.map((day) => {
+            const isSelected = targetDays.includes(day.value);
+            return (
+              <button
+                type="button"
+                key={day.value}
+                onClick={() => handleDayToggle(day.value)}
+                className={cn(
+                  'flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60',
+                  isSelected
+                    ? 'border-indigo-400 bg-gradient-to-br from-indigo-50 to-blue-50 text-indigo-700 shadow-sm shadow-indigo-100'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-slate-900'
+                )}
+              >
+                <span>{day.label}</span>
+                {isSelected && (
+                  <Badge variant="outline" className="border-indigo-200 bg-white/60 text-indigo-600 text-[11px]">
+                    ✔
+                  </Badge>
+                )}
+              </button>
+            );
+          })}
         </div>
-        {errors.targetDays && (
-          <p className="text-sm text-red-600 mt-1">{errors.targetDays}</p>
-        )}
+        {errors.targetDays && <p className="text-sm text-rose-500 mt-2">{errors.targetDays}</p>}
       </div>
 
       {/* Tags */}
@@ -172,21 +173,23 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
       </div>
 
       {/* Boutons d'action */}
-      <div className="flex space-x-3">
-        <button
+      <div className="flex gap-3">
+        <Button
           type="button"
+          variant="outline"
+          className="flex-1"
           onClick={onCancel}
-          className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
         >
           Annuler
-        </button>
-        <button
+        </Button>
+        <Button
           type="submit"
-          disabled={isSubmitting || !name.trim() || targetDays.length === 0}
-          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="flex-1"
+          loading={isSubmitting}
+          disabled={!name.trim() || targetDays.length === 0}
         >
           {isSubmitting ? 'Mise à jour...' : 'Mettre à jour'}
-        </button>
+        </Button>
       </div>
     </form>
   );

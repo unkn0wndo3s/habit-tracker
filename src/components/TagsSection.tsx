@@ -11,29 +11,20 @@ export default function TagsSection({ tags, onTagClick }: TagsSectionProps) {
   }
 
   return (
-    <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-      <h3 className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <span>🏷️</span>
-        <span>Tous les tags utilisés</span>
-      </h3>
-      {tags.length === 0 ? (
-        <p className="text-sm text-gray-500">Aucun tag utilisé pour le moment</p>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <button
-              key={tag.name}
-              onClick={() => onTagClick?.(tag.name)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 transition-colors shadow-sm"
-            >
-              <span>#{tag.name}</span>
-              <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">
-                {tag.count}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+      <h3 className="mb-3 text-sm font-semibold text-slate-900">Tous les tags</h3>
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <button
+            key={tag.name}
+            onClick={() => onTagClick?.(tag.name)}
+            className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-indigo-300 hover:text-indigo-600"
+          >
+            <span>#{tag.name}</span>
+            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">{tag.count}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

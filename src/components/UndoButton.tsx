@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from './ui/button';
+
 interface UndoButtonProps {
   onUndo: () => void;
   action: string;
@@ -10,24 +12,21 @@ export default function UndoButton({ onUndo, action, remainingTime }: UndoButton
   const secondsLeft = Math.ceil(remainingTime / 1000);
 
   return (
-    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
-      <div className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm">
+    <div className="animate-slide-up fixed bottom-5 left-1/2 z-50 w-[90vw] max-w-sm -translate-x-1/2">
+      <div className="flex items-center gap-3 rounded-3xl border border-white/40 bg-slate-900/80 px-5 py-4 text-white shadow-2xl shadow-slate-900/40 backdrop-blur">
         <div className="flex-1">
-          <p className="text-sm font-medium">
-            {action}
-          </p>
-          <p className="text-xs text-gray-300 mt-0.5">
-            Annulation possible dans {secondsLeft}s
-          </p>
+          <p className="text-sm font-semibold">{action}</p>
+          <p className="mt-1 text-xs text-slate-200">Annulation possible dans {secondsLeft}s</p>
         </div>
-        <button
+        <Button
+          type="button"
+          size="sm"
           onClick={onUndo}
-          className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-          aria-label="Annuler"
+          className="bg-white/15 px-4 text-white hover:bg-white/30"
+          aria-label="Annuler la dernière action"
         >
-          <span>↶</span>
-          <span>Annuler</span>
-        </button>
+          ↶ Annuler
+        </Button>
       </div>
     </div>
   );

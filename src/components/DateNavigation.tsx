@@ -1,6 +1,8 @@
 'use client';
 
 import { formatDate, isToday, addDays } from '@/utils/dateUtils';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 
 interface DateNavigationProps {
   currentDate: Date;
@@ -8,57 +10,45 @@ interface DateNavigationProps {
 }
 
 export default function DateNavigation({ currentDate, onDateChange }: DateNavigationProps) {
-  const goToPreviousDay = () => {
-    onDateChange(addDays(currentDate, -1));
-  };
-
-  const goToNextDay = () => {
-    onDateChange(addDays(currentDate, 1));
-  };
-
-  const goToToday = () => {
-    onDateChange(new Date());
-  };
+  const goToPreviousDay = () => onDateChange(addDays(currentDate, -1));
+  const goToNextDay = () => onDateChange(addDays(currentDate, 1));
+  const goToToday = () => onDateChange(new Date());
+  const today = isToday(currentDate);
 
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-3">
-      <div className="flex items-center justify-between">
-        <button
-          onClick={goToPreviousDay}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-          aria-label="Jour précédent"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" aria-label="Jour précédent" onClick={goToPreviousDay}>
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-        </button>
+        </Button>
 
         <div className="flex-1 text-center">
-          <button
-            onClick={goToToday}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-              isToday(currentDate)
-                ? 'bg-blue-100 text-blue-800'
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }`}
-          >
+          <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500">Date sélectionnée</p>
+          <button onClick={goToToday} className="mt-1 text-base font-semibold text-slate-900">
             {formatDate(currentDate)}
           </button>
-          {isToday(currentDate) && (
-            <p className="text-xs text-blue-600 mt-1">Aujourd&apos;hui</p>
+          {today && (
+            <Badge variant="success" className="mt-1 inline-flex">
+              Aujourd&apos;hui
+            </Badge>
           )}
         </div>
 
-        <button
-          onClick={goToNextDay}
-          className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-          aria-label="Jour suivant"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <Button variant="ghost" size="icon" aria-label="Jour suivant" onClick={goToNextDay}>
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-        </button>
+        </Button>
       </div>
+
+      {!today && (
+        <Button type="button" variant="secondary" size="sm" className="mt-4 w-full" onClick={goToToday}>
+          Revenir à aujourd&apos;hui
+        </Button>
+      )}
     </div>
   );
 }
+
