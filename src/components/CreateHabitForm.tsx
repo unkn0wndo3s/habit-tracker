@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Habit, DayOfWeek, DAYS_OF_WEEK } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
 import TagsInput from './TagsInput';
@@ -13,15 +13,31 @@ import { cn } from '@/lib/utils';
 interface CreateHabitFormProps {
   onHabitCreated: (habit: Habit) => void;
   onError?: (message: string) => void;
+  initialValues?: {
+    name?: string;
+    description?: string;
+    targetDays?: DayOfWeek[];
+    tags?: string[];
+  };
 }
 
-export default function CreateHabitForm({ onHabitCreated, onError }: CreateHabitFormProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [targetDays, setTargetDays] = useState<DayOfWeek[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
+export default function CreateHabitForm({ onHabitCreated, onError, initialValues }: CreateHabitFormProps) {
+  const [name, setName] = useState(initialValues?.name || '');
+  const [description, setDescription] = useState(initialValues?.description || '');
+  const [targetDays, setTargetDays] = useState<DayOfWeek[]>(initialValues?.targetDays || []);
+  const [tags, setTags] = useState<string[]>(initialValues?.tags || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ name?: string; description?: string; targetDays?: string }>({});
+
+  // Mettre à jour les valeurs si initialValues change
+  useEffect(() => {
+    if (initialValues) {
+      setName(initialValues.name || '');
+      setDescription(initialValues.description || '');
+      setTargetDays(initialValues.targetDays || []);
+      setTags(initialValues.tags || []);
+    }
+  }, [initialValues]);
   
   // Récupérer tous les tags existants pour les suggestions
   const allTags = useMemo(() => {
@@ -77,11 +93,13 @@ export default function CreateHabitForm({ onHabitCreated, onError }: CreateHabit
 
       onHabitCreated(newHabit);
       
-      // Reset form
-      setName('');
-      setDescription('');
-      setTargetDays([]);
-      setTags([]);
+      // Reset form seulement si ce n'est pas une duplication
+      if (!initialValues) {
+        setName('');
+        setDescription('');
+        setTargetDays([]);
+        setTags([]);
+      }
       setErrors({});
     } catch (error) {
       console.error('Erreur lors de la création de l\'habitude:', error);

@@ -30,6 +30,7 @@ export default function Home() {
   const [allHabits, setAllHabits] = useState<Habit[]>([]);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
+  const [duplicatingHabit, setDuplicatingHabit] = useState<Habit | null>(null);
   const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('daily');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -127,8 +128,13 @@ export default function Home() {
 
   const handleHabitCreated = (newHabit: Habit) => {
     setAllHabits(prev => [...prev, newHabit]);
+    if (duplicatingHabit) {
+      showSuccess('Habitude dupliquée avec succès !');
+      setDuplicatingHabit(null);
+    } else {
+      showSuccess('Habitude créée avec succès !');
+    }
     setViewMode('daily');
-    showSuccess('Habitude créée avec succès !');
   };
 
   const handleHabitUpdated = (updatedHabit: Habit) => {
@@ -206,6 +212,69 @@ export default function Home() {
     } else {
       showError('Erreur lors de la réactivation de l\'habitude');
     }
+  };
+
+  const generateDuplicateName = (originalName: string): string => {
+    const allHabits = HabitStorage.loadHabits();
+    const baseName = originalName.trim();
+    
+    // Vérifier si le nom commence déjà par "Copie de"
+    if (baseName.startsWith('Copie de ')) {
+      const nameWithoutPrefix = baseName.replace(/^Copie de /, '');
+      // Chercher un numéro existant
+      const match = nameWithoutPrefix.match(/^(.+?)\s*\((\d+)\)$/);
+      if (match) {
+        const base = match[1];
+        const num = parseInt(match[2], 10);
+        let newNum = num + 1;
+        let newName = `Copie de ${base} (${newNum})`;
+        while (allHabits.some(h => h.name === newName)) {
+          newNum++;
+          newName = `Copie de ${base} (${newNum})`;
+        }
+        return newName;
+      }
+      // Si pas de numéro, ajouter (2)
+      let newName = `${baseName} (2)`;
+      let num = 2;
+      while (allHabits.some(h => h.name === newName)) {
+        num++;
+        newName = `${baseName} (${num})`;
+      }
+      return newName;
+    }
+    
+    // Vérifier si le nom se termine déjà par un numéro entre parenthèses
+    const match = baseName.match(/^(.+?)\s*\((\d+)\)$/);
+    if (match) {
+      const base = match[1];
+      const num = parseInt(match[2], 10);
+      let newNum = num + 1;
+      let newName = `${base} (${newNum})`;
+      while (allHabits.some(h => h.name === newName)) {
+        newNum++;
+        newName = `${base} (${newNum})`;
+      }
+      return newName;
+    }
+    
+    // Sinon, préfixer par "Copie de"
+    let newName = `Copie de ${baseName}`;
+    let num = 2;
+    while (allHabits.some(h => h.name === newName)) {
+      newName = `Copie de ${baseName} (${num})`;
+      num++;
+    }
+    return newName;
+  };
+
+  const handleDuplicateHabit = (habit: Habit) => {
+    const duplicateName = generateDuplicateName(habit.name);
+    setDuplicatingHabit({
+      ...habit,
+      name: duplicateName
+    });
+    setViewMode('create');
   };
 
   const confirmDeleteHabit = () => {
@@ -328,15 +397,34 @@ export default function Home() {
             <Card className="bg-white/95">
               <CardHeader className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Créer une habitude</CardTitle>
-                  <CardDescription>Définissez un nom, des tags et un planning clair</CardDescription>
+                  <CardTitle>{duplicatingHabit ? 'Dupliquer l\'habitude' : 'Créer une habitude'}</CardTitle>
+                  <CardDescription>
+                    {duplicatingHabit ? 'Modifiez les données si nécessaire avant de sauvegarder' : 'Définissez un nom, des tags et un planning clair'}
+                  </CardDescription>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setViewMode('daily')} aria-label="Fermer le formulaire">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => {
+                    setViewMode('daily');
+                    setDuplicatingHabit(null);
+                  }} 
+                  aria-label="Fermer le formulaire"
+                >
                   ✕
                 </Button>
               </CardHeader>
               <CardContent>
-                <CreateHabitForm onHabitCreated={handleHabitCreated} onError={showError} />
+                <CreateHabitForm 
+                  onHabitCreated={handleHabitCreated} 
+                  onError={showError}
+                  initialValues={duplicatingHabit ? {
+                    name: duplicatingHabit.name,
+                    description: duplicatingHabit.description,
+                    targetDays: duplicatingHabit.targetDays,
+                    tags: duplicatingHabit.tags
+                  } : undefined}
+                />
               </CardContent>
             </Card>
           )}
@@ -470,6 +558,15 @@ export default function Home() {
                               aria-label="Modifier l'habitude"
                             >
                               ✏️
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDuplicateHabit(habit)}
+                              className="text-slate-500 hover:text-blue-600"
+                              aria-label="Dupliquer l'habitude"
+                            >
+                              📋
                             </Button>
                             <Button
                               variant="ghost"
