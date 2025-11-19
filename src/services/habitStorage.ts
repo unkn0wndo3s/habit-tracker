@@ -4,6 +4,13 @@ import { getDayOfWeek, getDateKey } from '@/utils/dateUtils';
 const STORAGE_KEY = 'trackit-habits';
 const COMPLETIONS_KEY = 'trackit-completions';
 
+type HabitCompletionEntry = {
+  habitId: string;
+  completedAt: string;
+};
+
+type HabitCompletions = Record<string, HabitCompletionEntry[]>;
+
 export class HabitStorage {
   static saveHabits(habits: Habit[]): void {
     try {
@@ -19,10 +26,11 @@ export class HabitStorage {
       if (!stored) return [];
       
       const habits = JSON.parse(stored);
-      // Convertir les dates string en objets Date et s'assurer que tags existe
+      // Convertir les dates string en objets Date et s'assurer que tags et archived existent
       return habits.map((habit: Habit) => ({
         ...habit,
         tags: habit.tags || [],
+        archived: habit.archived || false,
         createdAt: new Date(habit.createdAt)
       }));
     } catch (error) {
@@ -42,6 +50,7 @@ export class HabitStorage {
     const newHabit: Habit = {
       ...habit,
       tags: normalizedTags,
+      archived: false,
       id: crypto.randomUUID(),
       createdAt: new Date()
     };
@@ -73,14 +82,15 @@ export class HabitStorage {
    * Sauvegarde les complétions d'une habitude spécifique
    * Retourne un objet avec les dateKeys et les complétions
    */
-  static saveHabitCompletions(habitId: string): Record<string, boolean> {
+  static saveHabitCompletions(habitId: string): Record<string, string> {
     const completions = this.loadCompletions();
-    const habitCompletions: Record<string, boolean> = {};
+    const habitCompletions: Record<string, string> = {};
     
     // Parcourir toutes les dates et sauvegarder celles où l'habitude est complétée
     Object.keys(completions).forEach(dateKey => {
-      if (completions[dateKey].includes(habitId)) {
-        habitCompletions[dateKey] = true;
+      const entry = completions[dateKey].find(c => c.habitId === habitId);
+      if (entry) {
+        habitCompletions[dateKey] = entry.completedAt;
       }
     });
     
@@ -90,19 +100,21 @@ export class HabitStorage {
   /**
    * Restaure les complétions d'une habitude spécifique
    */
-  static restoreHabitCompletions(habitId: string, completions: Record<string, boolean>): void {
+  static restoreHabitCompletions(habitId: string, completions: Record<string, string>): void {
     const allCompletions = this.loadCompletions();
     
     // Restaurer chaque complétion
     Object.keys(completions).forEach(dateKey => {
-      if (completions[dateKey]) {
-        if (!allCompletions[dateKey]) {
-          allCompletions[dateKey] = [];
-        }
-        // Ajouter l'habitude si elle n'est pas déjà présente
-        if (!allCompletions[dateKey].includes(habitId)) {
-          allCompletions[dateKey].push(habitId);
-        }
+      if (!allCompletions[dateKey]) {
+        allCompletions[dateKey] = [];
+      }
+      
+      const alreadyCompleted = allCompletions[dateKey].some(entry => entry.habitId === habitId);
+      if (!alreadyCompleted) {
+        allCompletions[dateKey].push({
+          habitId,
+          completedAt: completions[dateKey]
+        });
       }
     });
     
@@ -157,13 +169,28 @@ export class HabitStorage {
     const dateKey = getDateKey(date);
     const completions = this.loadCompletions();
 
+    const dayCompletions = completions[dateKey] || [];
+
     return habits
-      .filter(habit => habit.targetDays.includes(dayOfWeek))
-      .map(habit => ({
-        ...habit,
-        isCompleted: completions[dateKey]?.includes(habit.id) || false,
-        completedAt: completions[dateKey]?.includes(habit.id) ? date : undefined
-      }));
+      .filter(habit => !habit.archived && habit.targetDays.includes(dayOfWeek))
+      .map(habit => {
+        const completionEntry = dayCompletions.find(entry => entry.habitId === habit.id);
+        return {
+          ...habit,
+          isCompleted: Boolean(completionEntry),
+          completedAt: completionEntry ? new Date(completionEntry.completedAt) : undefined
+        };
+      });
+  }
+
+  static archiveHabit(id: string): boolean {
+    const updated = this.updateHabit(id, { archived: true });
+    return updated !== null;
+  }
+
+  static unarchiveHabit(id: string): boolean {
+    const updated = this.updateHabit(id, { archived: false });
+    return updated !== null;
   }
 
   static toggleHabitCompletion(habitId: string, date: Date): void {
@@ -175,28 +202,61 @@ export class HabitStorage {
     }
     
     const dayCompletions = completions[dateKey];
-    const index = dayCompletions.indexOf(habitId);
+    const index = dayCompletions.findIndex(entry => entry.habitId === habitId);
     
     if (index > -1) {
       dayCompletions.splice(index, 1);
     } else {
-      dayCompletions.push(habitId);
+      dayCompletions.push({
+        habitId,
+        completedAt: new Date().toISOString()
+      });
     }
     
     this.saveCompletions(completions);
   }
 
-  private static loadCompletions(): Record<string, string[]> {
+  private static loadCompletions(): HabitCompletions {
     try {
       const stored = localStorage.getItem(COMPLETIONS_KEY);
-      return stored ? JSON.parse(stored) : {};
+      if (!stored) {
+        return {};
+      }
+
+      const parsed = JSON.parse(stored);
+      const normalized: HabitCompletions = {};
+
+      Object.keys(parsed).forEach(dateKey => {
+        const value = parsed[dateKey];
+        if (!Array.isArray(value)) {
+          normalized[dateKey] = [];
+          return;
+        }
+
+        if (value.length > 0 && typeof value[0] === 'string') {
+          // Ancien format (array d'IDs) -> convertir avec timestamp par défaut
+          normalized[dateKey] = value.map((habitId: string) => ({
+            habitId,
+            completedAt: new Date(`${dateKey}T00:00:00`).toISOString()
+          }));
+        } else {
+          normalized[dateKey] = value
+            .filter(entry => entry && typeof entry === 'object')
+            .map((entry: HabitCompletionEntry) => ({
+              habitId: entry.habitId,
+              completedAt: entry.completedAt || new Date(`${dateKey}T00:00:00`).toISOString()
+            }));
+        }
+      });
+
+      return normalized;
     } catch (error) {
       console.error('Erreur lors du chargement des complétions:', error);
       return {};
     }
   }
 
-  private static saveCompletions(completions: Record<string, string[]>): void {
+  private static saveCompletions(completions: HabitCompletions): void {
     try {
       localStorage.setItem(COMPLETIONS_KEY, JSON.stringify(completions));
     } catch (error) {
@@ -211,11 +271,11 @@ export class HabitStorage {
 
   private static removeHabitFromCompletions(habitId: string): void {
     const completions = this.loadCompletions();
-    const updatedCompletions: Record<string, string[]> = {};
+    const updatedCompletions: HabitCompletions = {};
     
     // Parcourir toutes les dates et supprimer l'habitude des complétions
     Object.keys(completions).forEach(dateKey => {
-      const dayCompletions = completions[dateKey].filter(id => id !== habitId);
+      const dayCompletions = completions[dateKey].filter(entry => entry.habitId !== habitId);
       if (dayCompletions.length > 0) {
         updatedCompletions[dateKey] = dayCompletions;
       }
@@ -255,7 +315,7 @@ export class HabitStorage {
       const dateKey = getDateKey(date);
       const dayOfWeek = getDayOfWeek(date);
       const isScheduled = habit.targetDays.includes(dayOfWeek);
-      const isCompleted = completions[dateKey]?.includes(habitId) || false;
+      const isCompleted = completions[dateKey]?.some(entry => entry.habitId === habitId) || false;
 
       result.push({
         date,
@@ -294,7 +354,7 @@ export class HabitStorage {
       const dateKey = getDateKey(currentDate);
       const dayOfWeek = getDayOfWeek(currentDate);
       const isScheduled = habit.targetDays.includes(dayOfWeek);
-      const isCompleted = completions[dateKey]?.includes(habitId) || false;
+      const isCompleted = completions[dateKey]?.some(entry => entry.habitId === habitId) || false;
       const isToday = dateKey === todayKey;
 
       if (isScheduled) {

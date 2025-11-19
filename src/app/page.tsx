@@ -55,9 +55,9 @@ export default function Home() {
       .sort((a, b) => b.count - a.count); // Trier par nombre décroissant
   }, [allHabits]);
 
-  // Filtrer les habitudes par tag sélectionné et recherche
+  // Filtrer les habitudes par tag sélectionné et recherche (exclure les archivées)
   const filteredHabits = useCallback(() => {
-    let filtered = allHabits;
+    let filtered = allHabits.filter(habit => !habit.archived);
 
     // Filtre par tag
     if (selectedTag) {
@@ -76,6 +76,11 @@ export default function Home() {
 
     return filtered;
   }, [allHabits, selectedTag, searchQuery]);
+
+  // Récupérer les habitudes archivées
+  const archivedHabits = useCallback(() => {
+    return allHabits.filter(habit => habit.archived === true);
+  }, [allHabits]);
 
   const loadDailyHabits = useCallback(() => {
     const habits = HabitStorage.getHabitsForDate(currentDate);
@@ -177,6 +182,30 @@ export default function Home() {
 
   const handleDeleteHabit = (habit: Habit) => {
     setHabitToDelete(habit);
+  };
+
+  const handleArchiveHabit = (habit: Habit) => {
+    const success = HabitStorage.archiveHabit(habit.id);
+    if (success) {
+      setAllHabits(prev => prev.map(h => 
+        h.id === habit.id ? { ...h, archived: true } : h
+      ));
+      showSuccess('Habitude archivée avec succès !');
+    } else {
+      showError('Erreur lors de l\'archivage de l\'habitude');
+    }
+  };
+
+  const handleUnarchiveHabit = (habit: Habit) => {
+    const success = HabitStorage.unarchiveHabit(habit.id);
+    if (success) {
+      setAllHabits(prev => prev.map(h => 
+        h.id === habit.id ? { ...h, archived: false } : h
+      ));
+      showSuccess('Habitude réactivée avec succès !');
+    } else {
+      showError('Erreur lors de la réactivation de l\'habitude');
+    }
   };
 
   const confirmDeleteHabit = () => {
@@ -332,7 +361,7 @@ export default function Home() {
           {viewMode === 'sevenDays' && (
             <Card className="bg-white/95">
               <CardContent className="p-0">
-                <SevenDaysView habits={allHabits} onClose={handleCloseSevenDays} />
+                <SevenDaysView habits={allHabits.filter(h => !h.archived)} onClose={handleCloseSevenDays} />
               </CardContent>
             </Card>
           )}
@@ -445,6 +474,15 @@ export default function Home() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => handleArchiveHabit(habit)}
+                              className="text-slate-500 hover:text-amber-600"
+                              aria-label="Archiver l'habitude"
+                            >
+                              📦
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleDeleteHabit(habit)}
                               className="text-slate-400 hover:text-rose-600"
                               aria-label="Supprimer l'habitude"
@@ -461,6 +499,68 @@ export default function Home() {
                 <Button className="w-full" onClick={() => setViewMode('create')}>
                   + Créer une habitude
                 </Button>
+
+                {/* Section des habitudes archivées */}
+                {archivedHabits().length > 0 && (
+                  <div className="mt-8 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-semibold text-slate-700">Archivées</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {archivedHabits().length}
+                      </Badge>
+                    </div>
+                    <div className="space-y-3">
+                      {archivedHabits().map((habit) => (
+                        <div
+                          key={habit.id}
+                          className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-inner shadow-white/50 opacity-75"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-base font-semibold text-slate-700 line-through">{habit.name}</h3>
+                                <Badge variant="outline" className="border-amber-300 bg-amber-100 text-xs text-amber-700">
+                                  Archivée
+                                </Badge>
+                                <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
+                              </div>
+                              {habit.description && (
+                                <p className="mt-1 text-sm text-slate-500">{habit.description}</p>
+                              )}
+                              <div className="mt-3 flex flex-wrap gap-1.5">
+                                {habit.targetDays.map((day) => (
+                                  <Badge key={day} variant="outline" className="border-amber-200 bg-white text-xs text-amber-600">
+                                    {day.charAt(0).toUpperCase() + day.slice(1)}
+                                  </Badge>
+                                ))}
+                              </div>
+                              {habit.tags && habit.tags.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                  {habit.tags.map((tag) => (
+                                    <Badge key={tag} variant="secondary" className="text-xs text-slate-500">
+                                      #{tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleUnarchiveHabit(habit)}
+                                className="text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                                aria-label="Réactiver l'habitude"
+                              >
+                                Réactiver
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

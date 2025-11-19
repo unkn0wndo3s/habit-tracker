@@ -4,6 +4,7 @@ export interface Habit {
   description?: string;
   targetDays: DayOfWeek[];
   tags: string[];
+  archived?: boolean;
   createdAt: Date;
 }
 
