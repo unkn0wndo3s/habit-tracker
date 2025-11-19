@@ -31,6 +31,8 @@ export default function Home() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
   const [duplicatingHabit, setDuplicatingHabit] = useState<Habit | null>(null);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [importFileData, setImportFileData] = useState<any>(null);
   const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('daily');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -275,6 +277,87 @@ export default function Home() {
       name: duplicateName
     });
     setViewMode('create');
+  };
+
+  const handleExportData = () => {
+    try {
+      const data = HabitStorage.exportData();
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `trackit-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSuccess('Sauvegarde exportée avec succès !');
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      showError('Erreur lors de l\'export de la sauvegarde');
+    }
+  };
+
+  const handleImportFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+        setImportFileData(data);
+        setShowImportConfirm(true);
+      } catch (error) {
+        console.error('Erreur lors de la lecture du fichier:', error);
+        showError('Fichier invalide. Veuillez sélectionner un fichier de sauvegarde valide.');
+      }
+    };
+    reader.onerror = () => {
+      showError('Erreur lors de la lecture du fichier');
+    };
+    reader.readAsText(file);
+    
+    // Réinitialiser l'input pour permettre de sélectionner le même fichier à nouveau
+    event.target.value = '';
+  };
+
+  const confirmImport = () => {
+    if (!importFileData) return;
+
+    const result = HabitStorage.importData(importFileData);
+    if (result.success) {
+      // Recharger toutes les données
+      setAllHabits(HabitStorage.loadHabits());
+      loadDailyHabits();
+      
+      // Afficher un message avec le nombre d'éléments ajoutés
+      const messages = [];
+      if (result.habitsAdded > 0) {
+        messages.push(`${result.habitsAdded} habitude${result.habitsAdded > 1 ? 's' : ''} ajoutée${result.habitsAdded > 1 ? 's' : ''}`);
+      }
+      if (result.completionsAdded > 0) {
+        messages.push(`${result.completionsAdded} complétion${result.completionsAdded > 1 ? 's' : ''} ajoutée${result.completionsAdded > 1 ? 's' : ''}`);
+      }
+      
+      if (messages.length > 0) {
+        showSuccess(`Sauvegarde importée avec succès ! ${messages.join(' et ')}.`);
+      } else {
+        showSuccess('Sauvegarde importée. Aucune nouvelle donnée à ajouter (toutes les habitudes existent déjà).');
+      }
+    } else {
+      showError('Erreur lors de l\'import. Le fichier est peut-être corrompu ou invalide.');
+    }
+    
+    setShowImportConfirm(false);
+    setImportFileData(null);
+  };
+
+  const cancelImport = () => {
+    setShowImportConfirm(false);
+    setImportFileData(null);
   };
 
   const confirmDeleteHabit = () => {
@@ -597,6 +680,36 @@ export default function Home() {
                   + Créer une habitude
                 </Button>
 
+                <div className="border-t border-slate-200 pt-4">
+                  <p className="text-sm font-medium text-slate-700 mb-3">Sauvegarde et transfert</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={handleExportData}
+                    >
+                      📥 Exporter
+                    </Button>
+                    <label className="flex-1 cursor-pointer">
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleImportFile}
+                        className="hidden"
+                        id="import-file-input"
+                      />
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        type="button"
+                        onClick={() => document.getElementById('import-file-input')?.click()}
+                      >
+                        📤 Importer
+                      </Button>
+                    </label>
+                  </div>
+                </div>
+
                 {/* Section des habitudes archivées */}
                 {archivedHabits().length > 0 && (
                   <div className="mt-8 space-y-4">
@@ -701,6 +814,17 @@ export default function Home() {
           confirmText="Supprimer"
           cancelText="Annuler"
           variant="danger"
+        />
+
+        <ConfirmationModal
+          isOpen={showImportConfirm}
+          onClose={cancelImport}
+          onConfirm={confirmImport}
+          title="Importer une sauvegarde"
+          message="Les habitudes et complétions du fichier seront ajoutées à vos données existantes. Les habitudes avec le même ID seront ignorées pour éviter les doublons."
+          confirmText="Importer"
+          cancelText="Annuler"
+          variant="info"
         />
 
         {toasts.map((toast) => (

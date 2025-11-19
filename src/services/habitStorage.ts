@@ -379,4 +379,148 @@ export class HabitStorage {
 
     return streak;
   }
+
+  /**
+   * Exporte toutes les données (habitudes et complétions) dans un format JSON
+   * @returns Un objet contenant les habitudes et les complétions
+   */
+  static exportData(): {
+    habits: Habit[];
+    completions: HabitCompletions;
+    exportDate: string;
+    version: string;
+  } {
+    const habits = this.loadHabits();
+    const completions = this.loadCompletions();
+    
+    return {
+      habits,
+      completions,
+      exportDate: new Date().toISOString(),
+      version: '1.0'
+    };
+  }
+
+  /**
+   * Importe des données depuis un objet JSON
+   * Fusionne les données avec les données existantes (ne remplace pas)
+   * @param data Les données à importer
+   * @returns Un objet avec le nombre d'habitudes et complétions ajoutées
+   */
+  static importData(data: {
+    habits: Habit[];
+    completions: HabitCompletions;
+    exportDate?: string;
+    version?: string;
+  }): { success: boolean; habitsAdded: number; completionsAdded: number } {
+    try {
+      // Valider la structure des données
+      if (!data || !Array.isArray(data.habits) || !data.completions || typeof data.completions !== 'object') {
+        return { success: false, habitsAdded: 0, completionsAdded: 0 };
+      }
+
+      // Charger les habitudes existantes
+      const existingHabits = this.loadHabits();
+      const existingHabitIds = new Set(existingHabits.map(h => h.id));
+
+      // Normaliser les habitudes à importer (s'assurer que tous les champs sont présents)
+      const normalizedHabits = data.habits.map(habit => ({
+        ...habit,
+        tags: habit.tags || [],
+        archived: habit.archived ?? false,
+        createdAt: habit.createdAt || new Date().toISOString()
+      }));
+
+      const habitIdMap: Record<string, string> = {};
+      const mergedHabits = [...existingHabits];
+      let habitsAdded = 0;
+
+      normalizedHabits.forEach(habit => {
+        const originalId = habit.id || crypto.randomUUID();
+        let finalId = originalId;
+
+        while (!finalId || existingHabitIds.has(finalId)) {
+          finalId = crypto.randomUUID();
+        }
+
+        habitIdMap[originalId] = finalId;
+
+        const habitToAdd: Habit = {
+          ...habit,
+          id: finalId
+        };
+
+        mergedHabits.push(habitToAdd);
+        existingHabitIds.add(finalId);
+        habitsAdded++;
+      });
+
+      // Charger les complétions existantes
+      const existingCompletions = this.loadCompletions();
+
+      // Normaliser les complétions à importer (s'assurer que la structure est correcte)
+      const normalizedCompletions: HabitCompletions = {};
+      Object.keys(data.completions).forEach(dateKey => {
+        const dayCompletions = data.completions[dateKey];
+        if (Array.isArray(dayCompletions)) {
+          // Si c'est l'ancien format (tableau de strings), convertir
+          if (dayCompletions.length > 0 && typeof dayCompletions[0] === 'string') {
+            normalizedCompletions[dateKey] = (dayCompletions as string[]).map(habitId => ({
+              habitId: habitIdMap[habitId] || habitId,
+              completedAt: new Date().toISOString() // Date par défaut pour les anciennes données
+            }));
+          } else {
+            // Nouveau format (tableau d'objets)
+            normalizedCompletions[dateKey] = (dayCompletions as HabitCompletionEntry[]).map(entry => ({
+              ...entry,
+              habitId: habitIdMap[entry.habitId] || entry.habitId
+            }));
+          }
+        }
+      });
+
+      // Fusionner les complétions existantes avec les nouvelles
+      const mergedCompletions: HabitCompletions = { ...existingCompletions };
+      let completionsAdded = 0;
+
+      Object.keys(normalizedCompletions).forEach(dateKey => {
+        const existingDayCompletions = mergedCompletions[dateKey] || [];
+        const newDayCompletions = normalizedCompletions[dateKey] || [];
+        
+        // Créer un Set pour éviter les doublons (même habitId et même completedAt)
+        const completionSet = new Set<string>();
+        existingDayCompletions.forEach(entry => {
+          completionSet.add(`${entry.habitId}-${entry.completedAt}`);
+        });
+
+        // Ajouter les nouvelles complétions qui n'existent pas déjà
+        const uniqueNewCompletions = newDayCompletions.filter(entry => {
+          const key = `${entry.habitId}-${entry.completedAt}`;
+          if (!completionSet.has(key)) {
+            completionSet.add(key);
+            completionsAdded++;
+            return true;
+          }
+          return false;
+        });
+
+        if (uniqueNewCompletions.length > 0 || existingDayCompletions.length > 0) {
+          mergedCompletions[dateKey] = [...existingDayCompletions, ...uniqueNewCompletions];
+        }
+      });
+
+      // Sauvegarder les données fusionnées
+      this.saveHabits(mergedHabits);
+      this.saveCompletions(mergedCompletions);
+
+      return {
+        success: true,
+        habitsAdded,
+        completionsAdded
+      };
+    } catch (error) {
+      console.error('Erreur lors de l\'import des données:', error);
+      return { success: false, habitsAdded: 0, completionsAdded: 0 };
+    }
+  }
 }

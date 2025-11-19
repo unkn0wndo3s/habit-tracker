@@ -38,7 +38,12 @@ export default function ConfirmationModal({
   );
 
   const confirmVariant =
-    variant === 'danger' ? 'destructive' : variant === 'warning' ? 'secondary' : 'default';
+    variant === 'danger' ? 'destructive' : variant === 'warning' ? 'default' : 'default';
+
+  const confirmButtonClasses = cn(
+    'flex-1',
+    variant === 'warning' && '!bg-amber-500 !text-white hover:!bg-amber-400 focus-visible:!ring-amber-500'
+  );
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
@@ -70,7 +75,7 @@ export default function ConfirmationModal({
           <Button
             type="button"
             variant={confirmVariant}
-            className={cn('flex-1', variant === 'warning' && 'bg-amber-500 text-white hover:bg-amber-400')}
+            className={confirmButtonClasses}
             onClick={handleConfirm}
           >
             {confirmText}
