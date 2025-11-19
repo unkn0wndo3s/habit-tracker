@@ -463,15 +463,22 @@ export class HabitStorage {
       Object.keys(data.completions).forEach(dateKey => {
         const dayCompletions = data.completions[dateKey];
         if (Array.isArray(dayCompletions)) {
+          const firstEntry = dayCompletions[0] as unknown;
+
           // Si c'est l'ancien format (tableau de strings), convertir
-          if (dayCompletions.length > 0 && typeof dayCompletions[0] === 'string') {
-            normalizedCompletions[dateKey] = (dayCompletions as string[]).map(habitId => ({
+          if (
+            dayCompletions.length > 0 &&
+            typeof firstEntry === 'string'
+          ) {
+            const legacyCompletions = dayCompletions as unknown as string[];
+            normalizedCompletions[dateKey] = legacyCompletions.map(habitId => ({
               habitId: habitIdMap[habitId] || habitId,
               completedAt: new Date().toISOString() // Date par défaut pour les anciennes données
             }));
           } else {
             // Nouveau format (tableau d'objets)
-            normalizedCompletions[dateKey] = (dayCompletions as HabitCompletionEntry[]).map(entry => ({
+            const structuredCompletions = dayCompletions as unknown as HabitCompletionEntry[];
+            normalizedCompletions[dateKey] = structuredCompletions.map(entry => ({
               ...entry,
               habitId: habitIdMap[entry.habitId] || entry.habitId
             }));
