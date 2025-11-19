@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/useToast';
 import { useUndo } from '@/hooks/useUndo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,7 @@ export default function Home() {
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
   const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('daily');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const { toasts, showSuccess, showError, removeToast } = useToast();
   const { undoState, registerUndo, undo, clearUndo, canUndo } = useUndo<Habit>();
   const [undoRemainingTime, setUndoRemainingTime] = useState(0);
@@ -53,13 +55,27 @@ export default function Home() {
       .sort((a, b) => b.count - a.count); // Trier par nombre décroissant
   }, [allHabits]);
 
-  // Filtrer les habitudes par tag sélectionné
+  // Filtrer les habitudes par tag sélectionné et recherche
   const filteredHabits = useCallback(() => {
-    if (!selectedTag) {
-      return allHabits;
+    let filtered = allHabits;
+
+    // Filtre par tag
+    if (selectedTag) {
+      filtered = filtered.filter(habit => (habit.tags || []).includes(selectedTag));
     }
-    return allHabits.filter(habit => (habit.tags || []).includes(selectedTag));
-  }, [allHabits, selectedTag]);
+
+    // Filtre par recherche (nom et description, insensible à la casse)
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(habit => {
+        const nameMatch = habit.name.toLowerCase().includes(query);
+        const descriptionMatch = habit.description?.toLowerCase().includes(query) || false;
+        return nameMatch || descriptionMatch;
+      });
+    }
+
+    return filtered;
+  }, [allHabits, selectedTag, searchQuery]);
 
   const loadDailyHabits = useCallback(() => {
     const habits = HabitStorage.getHabitsForDate(currentDate);
@@ -338,6 +354,29 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-5">
+                {/* Champ de recherche */}
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Rechercher une habitude..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pr-10"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                      aria-label="Effacer la recherche"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
                 {tagsWithCount().length > 0 && (
                   <TagsFilter selectedTag={selectedTag} onTagSelect={setSelectedTag} tags={tagsWithCount()} />
                 )}
@@ -346,10 +385,18 @@ export default function Home() {
                   <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-3xl">📝</div>
                     <h3 className="text-lg font-semibold text-slate-900">
-                      {selectedTag ? `Aucune habitude avec le tag "${selectedTag}"` : 'Aucune habitude créée'}
+                      {searchQuery.trim() 
+                        ? 'Aucune habitude trouvée' 
+                        : selectedTag 
+                        ? `Aucune habitude avec le tag "${selectedTag}"` 
+                        : 'Aucune habitude créée'}
                     </h3>
                     <p className="mt-2 text-sm text-slate-500">
-                      {selectedTag ? 'Essayez un autre tag ou créez une nouvelle habitude' : 'Commencez par définir votre première habitude'}
+                      {searchQuery.trim() 
+                        ? 'Essayez une autre recherche ou effacez le champ pour voir toutes les habitudes' 
+                        : selectedTag 
+                        ? 'Essayez un autre tag ou créez une nouvelle habitude' 
+                        : 'Commencez par définir votre première habitude'}
                     </p>
                   </div>
                 ) : (
