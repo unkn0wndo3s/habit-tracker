@@ -296,11 +296,6 @@ export default function Home() {
     setViewMode('sevenDays');
   };
 
-  const handleCloseSevenDays = () => {
-    // Retourner à la vue précédente (daily ou manage)
-    setViewMode(previousViewMode);
-  };
-
   const handleCancelEdit = () => {
     setEditingHabit(null);
     setViewMode('manage');
@@ -677,24 +672,11 @@ export default function Home() {
 
           {viewMode === 'create' && (
             <Card className="bg-white/95">
-              <CardHeader className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{duplicatingHabit ? 'Dupliquer l\'habitude' : 'Créer une habitude'}</CardTitle>
-                  <CardDescription>
-                    {duplicatingHabit ? 'Modifiez les données si nécessaire avant de sauvegarder' : 'Définissez un nom, des tags et un planning clair'}
-                  </CardDescription>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => {
-                    setViewMode('daily');
-                    setDuplicatingHabit(null);
-                  }} 
-                  aria-label="Fermer le formulaire"
-                >
-                  ✕
-                </Button>
+              <CardHeader>
+                <CardTitle>{duplicatingHabit ? 'Dupliquer l\'habitude' : 'Créer une habitude'}</CardTitle>
+                <CardDescription>
+                  {duplicatingHabit ? 'Modifiez les données si nécessaire avant de sauvegarder' : 'Définissez un nom, des tags et un planning clair'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <CreateHabitForm 
@@ -731,14 +713,13 @@ export default function Home() {
           {viewMode === 'sevenDays' && (
             <Card className="bg-white/95">
               <CardContent className="p-0">
-                <SevenDaysView habits={allHabits.filter(h => !h.archived)} onClose={handleCloseSevenDays} />
+                <SevenDaysView habits={allHabits.filter(h => !h.archived)} />
               </CardContent>
             </Card>
           )}
 
           {viewMode === 'settings' && (
             <SettingsView
-              onClose={() => setViewMode('daily')}
               onError={showError}
               onSuccess={showSuccess}
             />
@@ -746,19 +727,9 @@ export default function Home() {
 
           {viewMode === 'manage' && (
             <Card className="bg-white/95">
-              <CardHeader className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Gérer les habitudes</CardTitle>
-                  <CardDescription>Filtrez, éditez et organisez vos rituels</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" onClick={handleViewSevenDays} aria-label="Voir la vue 7 jours">
-                    📊
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setViewMode('daily')} aria-label="Fermer la gestion">
-                    ✕
-                  </Button>
-                </div>
+              <CardHeader>
+                <CardTitle>Gérer les habitudes</CardTitle>
+                <CardDescription>Filtrez, éditez et organisez vos rituels</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
                 {/* Champ de recherche */}

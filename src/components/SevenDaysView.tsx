@@ -6,14 +6,12 @@ import { Habit } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
 import { formatDateShort, isToday, getDateKey } from '@/utils/dateUtils';
 import StreakBadge from './StreakBadge';
-import { Button } from './ui/button';
 
 interface SevenDaysViewProps {
   habits: Habit[];
-  onClose: () => void;
 }
 
-export default function SevenDaysView({ habits, onClose }: SevenDaysViewProps) {
+export default function SevenDaysView({ habits }: SevenDaysViewProps) {
   const today = new Date();
   const last7DaysDates = Array.from({ length: 7 }).map((_, index) => {
     const date = new Date(today);
@@ -38,15 +36,10 @@ export default function SevenDaysView({ habits, onClose }: SevenDaysViewProps) {
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Vue hebdo</p>
-          <h2 className="mt-1 text-xl font-semibold text-slate-900">Progression sur 7 jours</h2>
-          <p className="text-sm text-slate-500">Comparez les habitudes planifiées et réalisées</p>
-        </div>
-        <Button variant="ghost" size="icon" aria-label="Fermer la vue 7 jours" onClick={onClose}>
-          ✕
-        </Button>
+      <div>
+        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Vue hebdo</p>
+        <h2 className="mt-1 text-xl font-semibold text-slate-900">Progression sur 7 jours</h2>
+        <p className="text-sm text-slate-500">Comparez les habitudes planifiées et réalisées</p>
       </div>
 
       {habits.length === 0 ? (

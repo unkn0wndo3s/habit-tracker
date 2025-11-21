@@ -318,7 +318,8 @@ export class HabitStorage {
       date.setDate(date.getDate() - i);
       const dateKey = getDateKey(date);
       const dayOfWeek = getDayOfWeek(date);
-      const isScheduled = habit.targetDays.includes(dayOfWeek);
+      const isBeforeCreation = date < new Date(habit.createdAt);
+      const isScheduled = !isBeforeCreation && habit.targetDays.includes(dayOfWeek);
       const isCompleted = completions[dateKey]?.some(entry => entry.habitId === habitId) || false;
 
       result.push({

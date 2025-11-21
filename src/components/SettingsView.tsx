@@ -6,12 +6,11 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 
 interface SettingsViewProps {
-  onClose: () => void;
   onError?: (message: string) => void;
   onSuccess?: (message: string) => void;
 }
 
-export default function SettingsView({ onClose, onError, onSuccess }: SettingsViewProps) {
+export default function SettingsView({ onError, onSuccess }: SettingsViewProps) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
@@ -70,14 +69,9 @@ export default function SettingsView({ onClose, onError, onSuccess }: SettingsVi
 
   return (
     <Card className="bg-white/95">
-      <CardHeader className="flex items-center justify-between">
-        <div>
-          <CardTitle>Paramètres</CardTitle>
-          <CardDescription>Gérez vos préférences et notifications</CardDescription>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Fermer les paramètres">
-          ✕
-        </Button>
+      <CardHeader>
+        <CardTitle>Paramètres</CardTitle>
+        <CardDescription>Gérez vos préférences et notifications</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">
