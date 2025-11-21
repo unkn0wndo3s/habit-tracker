@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Habit } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -13,6 +13,7 @@ const BASE_TIMEFRAMES = [
     label: '7 jours',
     days: 7,
     bucketSize: 1,
+    groupByMonth: false,
     description: 'Progression quotidienne sur la dernière semaine.'
   },
   {
@@ -20,27 +21,28 @@ const BASE_TIMEFRAMES = [
     label: '30 jours',
     days: 30,
     bucketSize: 2,
+    groupByMonth: false,
     description: 'Vue détaillée du dernier mois.'
   },
   {
     key: '90d',
     label: '3 mois',
-    days: 90,
-    bucketSize: 5,
+    months: 3,
+    groupByMonth: true,
     description: 'Votre cadence sur le trimestre.'
   },
   {
     key: '180d',
     label: '6 mois',
-    days: 180,
-    bucketSize: 10,
+    months: 6,
+    groupByMonth: true,
     description: 'Vue intermédiaire sur un semestre.'
   },
   {
     key: '365d',
     label: '1 an',
-    days: 365,
-    bucketSize: 15,
+    months: 12,
+    groupByMonth: true,
     description: 'Vos habitudes sur les douze derniers mois.'
   }
 ];
@@ -55,8 +57,10 @@ type CompletionPoint = {
 type TimeframeConfig = {
   key: string;
   label: string;
-  days: number;
-  bucketSize: number;
+  days?: number;
+  months?: number;
+  bucketSize?: number;
+  groupByMonth: boolean;
   description: string;
 };
 
@@ -65,6 +69,8 @@ interface StatsViewProps {
 }
 
 export default function StatsView({ habits }: StatsViewProps) {
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string>('30d');
+  
   const habitsFingerprint = useMemo(
     () => habits.map((habit) => habit.id).join('|'),
     [habits]
@@ -76,24 +82,27 @@ export default function StatsView({ habits }: StatsViewProps) {
   }, [habitsFingerprint]);
 
   const timeframes: TimeframeConfig[] = useMemo(() => {
-    const allDays = Math.max(trackedDays, 30);
     return [
       ...BASE_TIMEFRAMES,
       {
         key: 'all',
         label: 'Toujours',
-        days: allDays,
-        bucketSize: Math.max(1, Math.ceil(allDays / 24)),
+        groupByMonth: true,
         description: 'Panorama global depuis vos débuts.'
       }
     ];
-  }, [trackedDays]);
+  }, []);
 
   const timelinePerTimeframe = useMemo(() => {
     void habitsFingerprint;
     const map = new Map<string, CompletionPoint[]>();
     timeframes.forEach((tf) => {
-      map.set(tf.key, HabitStorage.getCompletionTimeline(tf.days));
+      if (tf.groupByMonth) {
+        const months = tf.months || undefined; // undefined = tous les mois
+        map.set(tf.key, HabitStorage.getCompletionTimelineByMonth(months));
+      } else if (tf.days) {
+        map.set(tf.key, HabitStorage.getCompletionTimeline(tf.days));
+      }
     });
     return map;
   }, [timeframes, habitsFingerprint]);
@@ -232,11 +241,43 @@ export default function StatsView({ habits }: StatsViewProps) {
         </CardContent>
       </Card>
 
-      {timeframes.map((timeframe) => {
+      {/* Segmented control pour sélectionner la période */}
+      <Card className="border border-slate-200 bg-white/95 shadow-sm shadow-slate-100">
+        <CardHeader>
+          <CardTitle>Progression dans le temps</CardTitle>
+          <CardDescription>Sélectionnez une période pour voir l'évolution de vos habitudes</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {timeframes.map((timeframe) => (
+              <button
+                key={timeframe.key}
+                type="button"
+                onClick={() => setSelectedTimeframe(timeframe.key)}
+                className={cn(
+                  'rounded-xl border px-4 py-2 text-sm font-medium transition-all',
+                  selectedTimeframe === timeframe.key
+                    ? 'border-indigo-400 bg-indigo-50 text-indigo-700 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-slate-50'
+                )}
+              >
+                {timeframe.label}
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {(() => {
+        const timeframe = timeframes.find(tf => tf.key === selectedTimeframe);
+        if (!timeframe) return null;
+        
         const points = timelinePerTimeframe.get(timeframe.key) ?? [];
         const hasData = points.some((point) => point.scheduledCount > 0);
         const summary = computeSummary(points);
-        const chartData = buildChart(points, timeframe.bucketSize);
+        const chartData = timeframe.groupByMonth 
+          ? buildChartByMonth(points)
+          : buildChart(points, timeframe.bucketSize || 1);
 
         return (
           <Card
@@ -285,14 +326,16 @@ export default function StatsView({ habits }: StatsViewProps) {
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                        Jours suivis
+                        {timeframe.groupByMonth ? 'Mois suivis' : 'Jours suivis'}
                       </p>
                       <p className="mt-1 text-2xl font-semibold text-slate-900">
                         {summary.daysWithSchedule}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Top jour</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                        {timeframe.groupByMonth ? 'Meilleur mois' : 'Top jour'}
+                      </p>
                       {summary.bestDay ? (
                         <p className="mt-1 text-base font-semibold text-slate-900">
                           {summary.bestDay.label}{' '}
@@ -316,7 +359,7 @@ export default function StatsView({ habits }: StatsViewProps) {
             </CardContent>
           </Card>
         );
-      })}
+      })()}
     </div>
   );
 }
@@ -344,8 +387,10 @@ function computeSummary(points: CompletionPoint[]) {
     if (point.scheduledCount === 0) return bestPoint;
     const rate = point.completedCount / point.scheduledCount;
     if (!bestPoint || rate > bestPoint.rate) {
+      // Vérifier si c'est un mois (dateKey contient seulement année-mois)
+      const isMonth = /^\d{4}-\d{2}$/.test(point.dateKey);
       return {
-        label: formatDate(point.date),
+        label: isMonth ? formatMonthLabel(point.date) : formatDate(point.date),
         rate: Math.round(rate * 100)
       };
     }
@@ -358,6 +403,14 @@ function computeSummary(points: CompletionPoint[]) {
     avgRate,
     bestDay: best ?? null
   };
+}
+
+function formatDate(date: Date) {
+  return date.toLocaleDateString('fr-FR', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short'
+  });
 }
 
 function buildChart(points: CompletionPoint[], bucketSize: number) {
@@ -385,6 +438,17 @@ function buildChart(points: CompletionPoint[], bucketSize: number) {
   return buckets;
 }
 
+function buildChartByMonth(points: CompletionPoint[]) {
+  return points.map((point) => {
+    const rate =
+      point.scheduledCount === 0
+        ? 0
+        : Math.round((point.completedCount / point.scheduledCount) * 100);
+    const label = formatMonthLabel(point.date);
+    return { label, rate };
+  });
+}
+
 function formatShortLabel(date: Date) {
   return date.toLocaleDateString('fr-FR', {
     day: '2-digit',
@@ -392,11 +456,10 @@ function formatShortLabel(date: Date) {
   });
 }
 
-function formatDate(date: Date) {
+function formatMonthLabel(date: Date) {
   return date.toLocaleDateString('fr-FR', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short'
+    month: 'short',
+    year: '2-digit'
   });
 }
 

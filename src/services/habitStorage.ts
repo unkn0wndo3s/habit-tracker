@@ -445,6 +445,89 @@ export class HabitStorage {
   }
 
   /**
+   * Retourne l'évolution des complétions groupées par mois
+   * @param months Nombre de mois à retourner (undefined = tous les mois depuis le début)
+   */
+  static getCompletionTimelineByMonth(months?: number): Array<{
+    date: Date;
+    dateKey: string;
+    scheduledCount: number;
+    completedCount: number;
+  }> {
+    const habits = this.loadHabits();
+    const completions = this.loadCompletions();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Trouver la date de début (création de la première habitude ou X mois en arrière)
+    const allHabits = habits.filter(h => !h.archived);
+    if (allHabits.length === 0) {
+      return [];
+    }
+
+    const earliestCreation = new Date(
+      Math.min(...allHabits.map(h => new Date(h.createdAt).getTime()))
+    );
+    earliestCreation.setDate(1); // Premier jour du mois
+    earliestCreation.setHours(0, 0, 0, 0);
+
+    const startDate = months
+      ? new Date(today.getFullYear(), today.getMonth() - months + 1, 1)
+      : earliestCreation;
+
+    const timeline: Array<{
+      date: Date;
+      dateKey: string;
+      scheduledCount: number;
+      completedCount: number;
+    }> = [];
+
+    // Parcourir chaque mois
+    const currentMonth = new Date(startDate);
+    while (currentMonth <= today) {
+      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+      monthEnd.setHours(23, 59, 59, 999);
+
+      let scheduledCount = 0;
+      let completedCount = 0;
+
+      // Parcourir tous les jours du mois
+      for (let date = new Date(monthStart); date <= monthEnd && date <= today; date.setDate(date.getDate() + 1)) {
+        date.setHours(0, 0, 0, 0);
+        const dateKey = getDateKey(date);
+        const dayOfWeek = getDayOfWeek(date);
+
+        const activeHabits = habits.filter((habit) => {
+          if (habit.archived) {
+            return false;
+          }
+          const createdAt = new Date(habit.createdAt);
+          createdAt.setHours(0, 0, 0, 0);
+          return createdAt <= date && habit.targetDays.includes(dayOfWeek);
+        });
+
+        scheduledCount += activeHabits.length;
+        const activeHabitIds = new Set(activeHabits.map((habit) => habit.id));
+        completedCount +=
+          completions[dateKey]?.filter((entry) => activeHabitIds.has(entry.habitId)).length || 0;
+      }
+
+      timeline.push({
+        date: new Date(monthStart),
+        dateKey: `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}`,
+        scheduledCount,
+        completedCount
+      });
+
+      // Passer au mois suivant
+      currentMonth.setMonth(currentMonth.getMonth() + 1);
+    }
+
+    return timeline;
+  }
+
+  /**
    * Taux de complétion du mois en cours
    */
   static getMonthlyCompletionRate(): {
