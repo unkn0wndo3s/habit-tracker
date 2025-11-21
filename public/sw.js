@@ -60,3 +60,46 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
+
+self.addEventListener("push", (event) => {
+  let payload = {};
+  if (event.data) {
+    try {
+      payload = event.data.json();
+    } catch (error) {
+      payload = { body: event.data.text() };
+    }
+  }
+
+  const title = payload.title || "TrackIt";
+  const options = {
+    body: payload.body || "Rappel d'habitude",
+    icon: payload.icon || "/icons/icon-192.png",
+    badge: payload.badge || "/icons/icon-192.png",
+    data: payload.data || { url: "/" },
+    tag: payload.tag || `trackit-${Date.now()}`,
+    renotify: false
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) {
+          client.focus();
+          client.postMessage({ type: "OPEN_FROM_NOTIFICATION", data: event.notification.data });
+          return;
+        }
+      }
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

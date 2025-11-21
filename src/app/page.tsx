@@ -105,7 +105,7 @@ export default function Home() {
   useEffect(() => {
     loadHabits();
     // Planifier toutes les notifications au chargement
-    NotificationService.scheduleAllNotifications();
+    NotificationService.scheduleAllNotifications().catch(() => {});
   }, [loadHabits]);
 
   useEffect(() => {
@@ -231,9 +231,10 @@ export default function Home() {
   const handleHabitCreated = (newHabit: Habit) => {
     setAllHabits(prev => [...prev, newHabit]);
     
-    // Planifier les notifications si activées
     if (newHabit.notificationEnabled) {
-      NotificationService.scheduleNotification(newHabit);
+      NotificationService.scheduleNotification(newHabit).catch((error) => {
+        console.error('Erreur lors de la planification du rappel:', error);
+      });
     }
     
     if (duplicatingHabit) {
@@ -264,11 +265,12 @@ export default function Home() {
         habit.id === updatedHabit.id ? updated : habit
       ));
       
-      // Mettre à jour les notifications
       if (updated.notificationEnabled) {
-        NotificationService.scheduleNotification(updated);
+        NotificationService.scheduleNotification(updated).catch((error) => {
+          console.error('Erreur lors de la reprogrammation du rappel:', error);
+        });
       } else {
-        NotificationService.cancelNotification(updated.id);
+        NotificationService.cancelNotification(updated.id).catch(() => {});
       }
       
       setEditingHabit(null);
@@ -315,6 +317,7 @@ export default function Home() {
         h.id === habit.id ? { ...h, archived: true } : h
       ));
       showSuccess('Habitude archivée avec succès !');
+      NotificationService.cancelNotification(habit.id).catch(() => {});
     } else {
       showError('Erreur lors de l\'archivage de l\'habitude');
     }
@@ -326,6 +329,12 @@ export default function Home() {
       setAllHabits(prev => prev.map(h => 
         h.id === habit.id ? { ...h, archived: false } : h
       ));
+      const storedHabit = HabitStorage.loadHabits().find(h => h.id === habit.id);
+      if (storedHabit?.notificationEnabled) {
+        NotificationService.scheduleNotification(storedHabit).catch((error) => {
+          console.error('Erreur lors de la reprogrammation du rappel:', error);
+        });
+      }
       showSuccess('Habitude réactivée avec succès !');
     } else {
       showError('Erreur lors de la réactivation de l\'habitude');
@@ -448,6 +457,7 @@ export default function Home() {
       // Recharger toutes les données
       setAllHabits(HabitStorage.loadHabits());
       loadDailyHabits();
+      NotificationService.scheduleAllNotifications().catch(() => {});
       
       // Afficher un message avec le nombre d'éléments ajoutés
       const messages = [];
@@ -511,6 +521,7 @@ export default function Home() {
       setAllHabits(prev => prev.filter(habit => habit.id !== habitToDelete.id));
       setHabitToDelete(null);
       showSuccess('Habitude supprimée avec succès !');
+      NotificationService.cancelNotification(habitToDelete.id).catch(() => {});
       
       // Enregistrer pour annulation avec les complétions
       registerUndo('suppression', habitToRestore, { completions });
@@ -535,20 +546,35 @@ export default function Home() {
       
       setAllHabits(prev => [...prev, restoredHabit]);
       showSuccess('Habitude restaurée avec succès !');
+      if (restoredHabit.notificationEnabled) {
+        NotificationService.scheduleNotification(restoredHabit).catch((error) => {
+          console.error('Erreur lors de la reprogrammation du rappel après restauration:', error);
+        });
+      }
     } else if (undoResult.action === 'modification') {
       // Restaurer l'ancienne version
       const oldHabit = undoResult.data as Habit;
       const success = HabitStorage.updateHabit(oldHabit.id, {
         name: oldHabit.name,
         description: oldHabit.description,
-        targetDays: oldHabit.targetDays
+        targetDays: oldHabit.targetDays,
+        tags: oldHabit.tags,
+        notificationEnabled: oldHabit.notificationEnabled,
+        notificationTime: oldHabit.notificationTime
       });
       
-    if (success) {
+      if (success) {
         setAllHabits(prev => prev.map(habit => 
           habit.id === oldHabit.id ? oldHabit : habit
         ));
         showSuccess('Modification annulée avec succès !');
+        if (oldHabit.notificationEnabled) {
+          NotificationService.scheduleNotification(oldHabit).catch((error) => {
+            console.error('Erreur lors de la reprogrammation du rappel après annulation:', error);
+          });
+        } else {
+          NotificationService.cancelNotification(oldHabit.id).catch(() => {});
+        }
       }
     }
   };
@@ -556,7 +582,14 @@ export default function Home() {
   const handleHabitToggle = (habitId: string) => {
     HabitStorage.toggleHabitCompletion(habitId, currentDate);
     loadDailyHabits();
-    // Pas de message de confirmation pour le toggle car c'est une action fréquente
+    const updatedHabit = HabitStorage.loadHabits().find(habit => habit.id === habitId);
+    if (updatedHabit?.notificationEnabled) {
+      NotificationService.scheduleNotification(updatedHabit).catch((error) => {
+        console.error('Erreur lors de la mise à jour du rappel:', error);
+      });
+    } else {
+      NotificationService.cancelNotification(habitId).catch(() => {});
+    }
   };
 
   const handleDateChange = (date: Date) => {

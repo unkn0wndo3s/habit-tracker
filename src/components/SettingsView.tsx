@@ -25,26 +25,27 @@ export default function SettingsView({ onClose, onError, onSuccess }: SettingsVi
   }, []);
 
   const handleToggleNotifications = async () => {
-    if (!notificationsEnabled) {
-      // Activer les notifications
-      setIsRequestingPermission(true);
-      const granted = await NotificationService.requestPermission();
-      setIsRequestingPermission(false);
-
-      if (granted) {
-        NotificationService.setNotificationsEnabled(true);
+    setIsRequestingPermission(true);
+    try {
+      if (!notificationsEnabled) {
+        await NotificationService.setNotificationsEnabled(true);
         setNotificationsEnabled(true);
         setNotificationPermission('granted');
         onSuccess?.('Notifications activées avec succès !');
       } else {
-        onError?.('Les notifications ont été refusées. Veuillez les autoriser dans les paramètres de votre navigateur.');
-        setNotificationPermission('denied');
+        await NotificationService.setNotificationsEnabled(false);
+        setNotificationsEnabled(false);
+        setNotificationPermission(Notification.permission);
+        onSuccess?.('Notifications désactivées.');
       }
-    } else {
-      // Désactiver les notifications
-      NotificationService.setNotificationsEnabled(false);
-      setNotificationsEnabled(false);
-      onSuccess?.('Notifications désactivées.');
+    } catch (error: any) {
+      const message =
+        error?.message ||
+        'Impossible de modifier les notifications. Vérifiez les permissions de votre navigateur.';
+      onError?.(message);
+      setNotificationPermission(Notification.permission);
+    } finally {
+      setIsRequestingPermission(false);
     }
   };
 
@@ -95,10 +96,10 @@ export default function SettingsView({ onClose, onError, onSuccess }: SettingsVi
             <Button
               variant={notificationsEnabled ? 'default' : 'outline'}
               onClick={handleToggleNotifications}
-              disabled={isRequestingPermission || notificationPermission === 'denied'}
+              disabled={isRequestingPermission}
               className="ml-4"
             >
-              {isRequestingPermission ? 'Demande...' : notificationsEnabled ? 'Activées' : 'Désactivées'}
+              {isRequestingPermission ? 'Chargement...' : notificationsEnabled ? 'Activées' : 'Désactivées'}
             </Button>
           </div>
         </div>
@@ -114,7 +115,9 @@ export default function SettingsView({ onClose, onError, onSuccess }: SettingsVi
             <Button
               variant="outline"
               onClick={handleTestNotification}
-              disabled={isTestingNotification || notificationPermission === 'denied' || isRequestingPermission}
+              disabled={
+                isTestingNotification || notificationPermission === 'denied' || isRequestingPermission || !notificationsEnabled
+              }
             >
               {isTestingNotification ? 'Programmation...' : 'Tester'}
             </Button>

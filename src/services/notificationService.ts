@@ -1,273 +1,226 @@
 import { Habit } from '@/types/habit';
 import { HabitStorage } from './habitStorage';
-import { getDayOfWeek, getDateKey } from '@/utils/dateUtils';
-
-type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+import { getDayOfWeek } from '@/utils/dateUtils';
+import { VAPID_PUBLIC_KEY } from '@/config/pushPublicKey';
 
 const NOTIFICATIONS_ENABLED_KEY = 'trackit-notifications-enabled';
-
-// Stockage en mémoire des timers (ne peut pas être sérialisé)
-const notificationTimers: Record<string, ReturnType<typeof setTimeout>> = {};
-
+const SUBSCRIPTION_ID_KEY = 'trackit-subscription-id';
 export class NotificationService {
-  /**
-   * Vérifie si les notifications sont activées globalement
-   */
+  private static cachedApplicationServerKey: ArrayBuffer | null = null;
+
   static areNotificationsEnabled(): boolean {
     if (typeof window === 'undefined') return false;
     try {
-      const stored = localStorage.getItem(NOTIFICATIONS_ENABLED_KEY);
-      return stored === 'true';
+      return localStorage.getItem(NOTIFICATIONS_ENABLED_KEY) === 'true';
     } catch {
       return false;
     }
   }
 
-  /**
-   * Programme une notification de test (10 secondes)
-   */
-  static async scheduleTestNotification(): Promise<boolean> {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      return false;
-    }
-
-    const hasPermission =
-      Notification.permission === 'granted' || (await this.requestPermission());
-
-    if (!hasPermission) {
-      return false;
-    }
-
-    setTimeout(() => {
-      const notification = new Notification("TrackIt - Notification de test", {
-        body: "Ceci est un rappel de test qui s'affiche après 10 secondes.",
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
-        tag: 'test-notification',
-        requireInteraction: false,
-        data: {
-          url: window.location.origin
-        }
-      });
-
-      notification.onclick = () => {
-        window.focus();
-        notification.close();
-      };
-    }, 10_000);
-
-    return true;
-  }
-
-  /**
-   * Active ou désactive les notifications globalement
-   */
-  static setNotificationsEnabled(enabled: boolean): void {
+  static async setNotificationsEnabled(enabled: boolean): Promise<void> {
     if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(NOTIFICATIONS_ENABLED_KEY, enabled ? 'true' : 'false');
-      if (enabled) {
-        this.requestPermission().then(() => {
-          this.scheduleAllNotifications();
-        });
-      } else {
-        this.cancelAllNotifications();
+    localStorage.setItem(NOTIFICATIONS_ENABLED_KEY, enabled ? 'true' : 'false');
+
+    if (enabled) {
+      const granted = await this.requestPermission();
+      if (!granted) {
+        localStorage.setItem(NOTIFICATIONS_ENABLED_KEY, 'false');
+        throw new Error('Notifications refusées par le navigateur');
       }
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde des paramètres de notifications:', error);
+
+      await this.ensureSubscription();
+      await this.scheduleAllNotifications();
+    } else {
+      const subscriptionId = this.getStoredSubscriptionId();
+      if (subscriptionId) {
+        await fetch('/api/notifications/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId, cancelAll: true })
+        }).catch(() => {});
+
+        await fetch('/api/notifications/unsubscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId })
+        }).catch(() => {});
+      }
+
+      const registration = await navigator.serviceWorker.ready.catch(() => null);
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        await subscription.unsubscribe().catch(() => {});
+      }
+
+      localStorage.removeItem(SUBSCRIPTION_ID_KEY);
     }
   }
 
-  /**
-   * Demande la permission pour les notifications
-   */
+  static async scheduleNotification(habit: Habit): Promise<void> {
+    if (typeof window === 'undefined') return;
+    if (!this.areNotificationsEnabled()) return;
+    if (!habit.notificationEnabled || habit.archived || !habit.notificationTime) {
+      await this.cancelNotification(habit.id);
+      return;
+    }
+
+    const nextOccurrence = this.getNextOccurrence(habit);
+    if (!nextOccurrence) {
+      await this.cancelNotification(habit.id);
+      return;
+    }
+
+    const subscriptionId = await this.ensureSubscription();
+    if (!subscriptionId) return;
+
+    await fetch('/api/notifications/schedule', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscriptionId,
+        habitId: habit.id,
+        habitName: habit.name,
+        scheduledAt: nextOccurrence.toISOString()
+      })
+    }).catch((error) => {
+      console.error('Erreur lors de la programmation du rappel:', error);
+    });
+  }
+
+  static async cancelNotification(habitId: string): Promise<void> {
+    const subscriptionId = this.getStoredSubscriptionId();
+    if (!subscriptionId) return;
+
+    await fetch('/api/notifications/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscriptionId, habitId })
+    }).catch(() => {});
+  }
+
+  static async scheduleAllNotifications(): Promise<void> {
+    if (!this.areNotificationsEnabled()) return;
+    const habits = HabitStorage.loadHabits();
+
+    await Promise.all(
+      habits
+        .filter((habit) => habit.notificationEnabled && !habit.archived)
+        .map((habit) => this.scheduleNotification(habit))
+    );
+  }
+
+  static async scheduleTestNotification(): Promise<boolean> {
+    if (typeof window === 'undefined') return false;
+    const subscriptionId = await this.ensureSubscription();
+    if (!subscriptionId) return false;
+
+    const response = await fetch('/api/notifications/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscriptionId })
+    });
+
+    return response.ok;
+  }
+
   static async requestPermission(): Promise<boolean> {
     if (typeof window === 'undefined' || !('Notification' in window)) {
       return false;
     }
 
-    if (Notification.permission === 'granted') {
-      return true;
-    }
-
-    if (Notification.permission === 'denied') {
-      return false;
-    }
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
 
     const permission = await Notification.requestPermission();
     return permission === 'granted';
   }
 
-  /**
-   * Planifie une notification pour une habitude spécifique
-   */
-  static scheduleNotification(habit: Habit): void {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      return;
+  private static async ensureSubscription(): Promise<string | null> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      return null;
     }
 
-    if (!this.areNotificationsEnabled()) {
-      return;
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      const applicationServerKey = await this.getApplicationServerKey();
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey
+      });
     }
 
-    if (!habit.notificationEnabled || !habit.notificationTime) {
-      return;
-    }
-
-    if (habit.archived) {
-      return;
-    }
-
-    // Annuler les notifications existantes pour cette habitude
-    this.cancelNotification(habit.id);
-
-    // Planifier les notifications pour chaque jour ciblé
-    habit.targetDays.forEach((day) => {
-      this.scheduleNotificationForDay(habit, day);
+    const response = await fetch('/api/notifications/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription })
     });
+
+    if (!response.ok) {
+      console.error('Impossible de sauvegarder la subscription push.');
+      return null;
+    }
+
+    const data = await response.json();
+    const subscriptionId = data.subscriptionId as string;
+    localStorage.setItem(SUBSCRIPTION_ID_KEY, subscriptionId);
+    return subscriptionId;
   }
 
-  /**
-   * Planifie une notification pour un jour spécifique
-   */
-  private static scheduleNotificationForDay(habit: Habit, day: DayOfWeek): void {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      return;
+  private static getStoredSubscriptionId(): string | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      return localStorage.getItem(SUBSCRIPTION_ID_KEY);
+    } catch {
+      return null;
+    }
+  }
+
+  private static async getApplicationServerKey(): Promise<ArrayBuffer> {
+    if (this.cachedApplicationServerKey) {
+      return this.cachedApplicationServerKey;
     }
 
-    const [hours, minutes] = habit.notificationTime!.split(':').map(Number);
-    const today = new Date();
-    const currentDay = getDayOfWeek(today);
-    
-    // Trouver le prochain jour correspondant
-    const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day);
-    const currentDayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(currentDay);
-    
-    let daysUntilTarget = dayIndex - currentDayIndex;
-    if (daysUntilTarget < 0) {
-      daysUntilTarget += 7;
+    const padding = '='.repeat((4 - (VAPID_PUBLIC_KEY.length % 4)) % 4);
+    const base64 = (VAPID_PUBLIC_KEY + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
     }
-    
-    // Si c'est aujourd'hui et que l'heure est passée, programmer pour la semaine prochaine
-    if (daysUntilTarget === 0) {
-      const now = new Date();
-      const notificationTime = new Date();
-      notificationTime.setHours(hours, minutes, 0, 0);
-      if (notificationTime <= now) {
-        daysUntilTarget = 7;
+
+    this.cachedApplicationServerKey = outputArray.buffer;
+    return outputArray.buffer;
+  }
+
+  private static getNextOccurrence(habit: Habit): Date | null {
+    if (!habit.notificationTime || !habit.targetDays.length) {
+      return null;
+    }
+
+    const [hours, minutes] = habit.notificationTime.split(':').map(Number);
+    const now = new Date();
+
+    for (let offset = 0; offset < 14; offset += 1) {
+      const candidate = new Date(now);
+      candidate.setDate(now.getDate() + offset);
+      candidate.setHours(hours, minutes, 0, 0);
+
+      const day = getDayOfWeek(candidate);
+      if (!habit.targetDays.includes(day)) {
+        continue;
       }
-    }
 
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() + daysUntilTarget);
-    targetDate.setHours(hours, minutes, 0, 0);
-
-    // Utiliser l'API Notification pour créer une notification programmée
-    // Note: Les notifications programmées nécessitent un Service Worker
-    // Pour l'instant, on utilise une approche simplifiée avec setInterval
-    // Dans un environnement de production, on utiliserait l'API Service Worker Notification
-    
-    // Stocker l'ID de la notification pour pouvoir l'annuler
-    const notificationId = `habit-${habit.id}-${day}`;
-    
-    // Pour une vraie implémentation, on utiliserait l'API Service Worker
-    // Ici, on simule avec setTimeout (limitation: ne fonctionne que si l'app est ouverte)
-    const timeout = targetDate.getTime() - Date.now();
-    
-    if (timeout > 0 && timeout < 7 * 24 * 60 * 60 * 1000) { // Max 7 jours
-      const timerId = setTimeout(() => {
-        this.showNotification(habit);
-      }, timeout);
-      
-      // Stocker le timer ID pour pouvoir l'annuler
-      notificationTimers[notificationId] = timerId;
-    }
-  }
-
-  /**
-   * Affiche une notification pour une habitude
-   */
-  private static async showNotification(habit: Habit): Promise<void> {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      return;
-    }
-
-    if (Notification.permission !== 'granted') {
-      return;
-    }
-
-    // Vérifier si l'habitude est déjà complétée aujourd'hui
-    const today = new Date();
-    const habitsForToday = HabitStorage.getHabitsForDate(today);
-    const habitForToday = habitsForToday.find(h => h.id === habit.id);
-    const isCompleted = habitForToday?.isCompleted || false;
-
-    if (isCompleted) {
-      return; // Ne pas envoyer de notification si déjà complétée
-    }
-
-    const notification = new Notification('TrackIt - Rappel d\'habitude', {
-      body: `N'oubliez pas : ${habit.name}`,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      tag: `habit-${habit.id}`,
-      requireInteraction: false,
-      data: {
-        habitId: habit.id,
-        url: window.location.origin
+      if (candidate <= now) {
+        continue;
       }
-    });
 
-    notification.onclick = () => {
-      window.focus();
-      notification.close();
-    };
-
-    // Planifier la prochaine notification pour la semaine suivante
-    setTimeout(() => {
-      this.scheduleNotification(habit);
-    }, 1000);
-  }
-
-  /**
-   * Annule toutes les notifications pour une habitude
-   */
-  static cancelNotification(habitId: string): void {
-    Object.keys(notificationTimers).forEach(key => {
-      if (key.startsWith(`habit-${habitId}-`)) {
-        clearTimeout(notificationTimers[key]);
-        delete notificationTimers[key];
-      }
-    });
-  }
-
-  /**
-   * Annule toutes les notifications
-   */
-  static cancelAllNotifications(): void {
-    Object.values(notificationTimers).forEach(timerId => {
-      clearTimeout(timerId);
-    });
-    Object.keys(notificationTimers).forEach(key => {
-      delete notificationTimers[key];
-    });
-  }
-
-  /**
-   * Planifie les notifications pour toutes les habitudes
-   */
-  static scheduleAllNotifications(): void {
-    if (!this.areNotificationsEnabled()) {
-      return;
+      return candidate;
     }
 
-    const habits = HabitStorage.loadHabits();
-    habits.forEach(habit => {
-      if (habit.notificationEnabled && !habit.archived) {
-        this.scheduleNotification(habit);
-      }
-    });
+    return null;
   }
-
 }
 
