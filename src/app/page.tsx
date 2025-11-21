@@ -7,7 +7,7 @@ import CreateHabitForm from '@/components/CreateHabitForm';
 import EditHabitForm from '@/components/EditHabitForm';
 import DailyHabitsList from '@/components/DailyHabitsList';
 import DateNavigation from '@/components/DateNavigation';
-import SevenDaysView from '@/components/SevenDaysView';
+import StatsView from '@/components/StatsView';
 import StreakBadge from '@/components/StreakBadge';
 import TagsFilter from '@/components/TagsFilter';
 import ConfirmationModal from '@/components/ConfirmationModal';
@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-type ViewMode = 'daily' | 'create' | 'manage' | 'edit' | 'sevenDays' | 'settings';
+type ViewMode = 'daily' | 'create' | 'manage' | 'edit' | 'stats' | 'settings';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -42,7 +42,6 @@ export default function Home() {
   const [importFileData, setImportFileData] = useState<any>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
   const [isAppInstalled, setIsAppInstalled] = useState(false);
-  const [previousViewMode, setPreviousViewMode] = useState<ViewMode>('daily');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const { toasts, showSuccess, showError, removeToast } = useToast();
@@ -291,9 +290,8 @@ export default function Home() {
     setViewMode('edit');
   };
 
-  const handleViewSevenDays = () => {
-    setPreviousViewMode(viewMode);
-    setViewMode('sevenDays');
+  const handleViewStats = () => {
+    setViewMode('stats');
   };
 
   const handleCancelEdit = () => {
@@ -597,7 +595,7 @@ export default function Home() {
     : 0;
 
   const navItems: Array<{
-    key: ViewMode | 'stats';
+    key: ViewMode;
     label: string;
     icon: string;
     action: () => void;
@@ -628,9 +626,9 @@ export default function Home() {
     },
     {
       key: 'stats',
-      label: '7 jours',
+      label: 'Statistiques',
       icon: '📊',
-      action: handleViewSevenDays
+      action: handleViewStats
     }
   ];
 
@@ -710,10 +708,10 @@ export default function Home() {
             </Card>
           )}
 
-          {viewMode === 'sevenDays' && (
+          {viewMode === 'stats' && (
             <Card className="bg-white/95">
               <CardContent className="p-0">
-                <SevenDaysView habits={allHabits.filter(h => !h.archived)} />
+                <StatsView habits={allHabits.filter(h => !h.archived)} />
               </CardContent>
             </Card>
           )}
@@ -960,7 +958,7 @@ export default function Home() {
               {navItems.map((item) => {
                 const isActive =
                   item.key === 'stats'
-                    ? viewMode === 'sevenDays'
+                    ? viewMode === 'stats'
                     : viewMode === item.key;
                 return (
                   <button

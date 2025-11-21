@@ -13,6 +13,7 @@ export interface Habit {
 export interface DailyHabit extends Habit {
   isCompleted: boolean;
   completedAt?: Date;
+  isFuture?: boolean;
 }
 
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';

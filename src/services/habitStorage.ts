@@ -3,6 +3,7 @@ import { getDayOfWeek, getDateKey } from '@/utils/dateUtils';
 
 const STORAGE_KEY = 'trackit-habits';
 const COMPLETIONS_KEY = 'trackit-completions';
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 type HabitCompletionEntry = {
   habitId: string;
@@ -168,21 +169,36 @@ export class HabitStorage {
   }
 
   static getHabitsForDate(date: Date): DailyHabit[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+
     const habits = this.loadHabits();
-    const dayOfWeek = getDayOfWeek(date);
-    const dateKey = getDateKey(date);
+    const dayOfWeek = getDayOfWeek(targetDate);
+    const dateKey = getDateKey(targetDate);
     const completions = this.loadCompletions();
 
     const dayCompletions = completions[dateKey] || [];
 
     return habits
-      .filter(habit => !habit.archived && habit.targetDays.includes(dayOfWeek))
+      .filter(habit => {
+        if (habit.archived) return false;
+        if (!habit.targetDays.includes(dayOfWeek)) return false;
+        // Ne pas afficher l'habitude avant sa date de création
+        const createdAt = new Date(habit.createdAt);
+        createdAt.setHours(0, 0, 0, 0);
+        if (createdAt > targetDate) return false;
+        return true;
+      })
       .map(habit => {
         const completionEntry = dayCompletions.find(entry => entry.habitId === habit.id);
+        const isFutureDate = targetDate > today;
         return {
           ...habit,
-          isCompleted: Boolean(completionEntry),
-          completedAt: completionEntry ? new Date(completionEntry.completedAt) : undefined
+          isCompleted: !isFutureDate && Boolean(completionEntry),
+          completedAt: completionEntry ? new Date(completionEntry.completedAt) : undefined,
+          isFuture: isFutureDate
         };
       });
   }
@@ -198,7 +214,16 @@ export class HabitStorage {
   }
 
   static toggleHabitCompletion(habitId: string, date: Date): void {
-    const dateKey = getDateKey(date);
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (targetDate > today) {
+      return;
+    }
+
+    const dateKey = getDateKey(targetDate);
     const completions = this.loadCompletions();
     
     if (!completions[dateKey]) {
@@ -315,10 +340,13 @@ export class HabitStorage {
     // Générer les 7 derniers jours (du plus ancien au plus récent)
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
+      date.setHours(0, 0, 0, 0);
       date.setDate(date.getDate() - i);
       const dateKey = getDateKey(date);
       const dayOfWeek = getDayOfWeek(date);
-      const isBeforeCreation = date < new Date(habit.createdAt);
+      const createdAt = new Date(habit.createdAt);
+      createdAt.setHours(0, 0, 0, 0);
+      const isBeforeCreation = date < createdAt;
       const isScheduled = !isBeforeCreation && habit.targetDays.includes(dayOfWeek);
       const isCompleted = completions[dateKey]?.some(entry => entry.habitId === habitId) || false;
 
@@ -331,6 +359,212 @@ export class HabitStorage {
     }
 
     return result;
+  }
+
+  /**
+   * Retourne le nombre de jours suivis depuis la première habitude créée
+   */
+  static getTrackedDays(): number {
+    const habits = this.loadHabits();
+    if (habits.length === 0) {
+      return 0;
+    }
+
+    const earliest = habits.reduce((min, habit) => {
+      const createdAt = new Date(habit.createdAt);
+      createdAt.setHours(0, 0, 0, 0);
+      return Math.min(min, createdAt.getTime());
+    }, Number.POSITIVE_INFINITY);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const diff = today.getTime() - earliest;
+    if (diff < 0) {
+      return 0;
+    }
+
+    return Math.floor(diff / DAY_IN_MS) + 1;
+  }
+
+  /**
+   * Retourne l'évolution des complétions sur une période donnée
+   */
+  static getCompletionTimeline(days: number): Array<{
+    date: Date;
+    dateKey: string;
+    scheduledCount: number;
+    completedCount: number;
+  }> {
+    if (!days || days <= 0) {
+      return [];
+    }
+
+    const habits = this.loadHabits();
+    const completions = this.loadCompletions();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const timeline: Array<{
+      date: Date;
+      dateKey: string;
+      scheduledCount: number;
+      completedCount: number;
+    }> = [];
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      const dateKey = getDateKey(date);
+      const dayOfWeek = getDayOfWeek(date);
+
+      const activeHabits = habits.filter((habit) => {
+        if (habit.archived) {
+          return false;
+        }
+        const createdAt = new Date(habit.createdAt);
+        createdAt.setHours(0, 0, 0, 0);
+        return createdAt <= date && habit.targetDays.includes(dayOfWeek);
+      });
+
+      const scheduledCount = activeHabits.length;
+      const activeHabitIds = new Set(activeHabits.map((habit) => habit.id));
+      const completedCount =
+        completions[dateKey]?.filter((entry) => activeHabitIds.has(entry.habitId)).length || 0;
+
+      timeline.push({
+        date,
+        dateKey,
+        scheduledCount,
+        completedCount
+      });
+    }
+
+    return timeline;
+  }
+
+  /**
+   * Taux de complétion du mois en cours
+   */
+  static getMonthlyCompletionRate(): {
+    monthLabel: string;
+    rate: number;
+    scheduled: number;
+    completed: number;
+  } {
+    const habits = this.loadHabits();
+    const completions = this.loadCompletions();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    start.setHours(0, 0, 0, 0);
+
+    let scheduled = 0;
+    let completed = 0;
+
+    for (let date = new Date(start); date <= today; date.setDate(date.getDate() + 1)) {
+      const dayOfWeek = getDayOfWeek(date);
+      const dateKey = getDateKey(date);
+
+      habits.forEach((habit) => {
+        if (habit.archived) {
+          return;
+        }
+        const createdAt = new Date(habit.createdAt);
+        createdAt.setHours(0, 0, 0, 0);
+        if (createdAt > date) {
+          return;
+        }
+        if (habit.targetDays.includes(dayOfWeek)) {
+          scheduled += 1;
+          const hasCompleted =
+            completions[dateKey]?.some((entry) => entry.habitId === habit.id) || false;
+          if (hasCompleted) {
+            completed += 1;
+          }
+        }
+      });
+    }
+
+    const rate = scheduled === 0 ? 0 : Math.round((completed / scheduled) * 100);
+    const monthLabel = today.toLocaleDateString('fr-FR', {
+      month: 'long',
+      year: 'numeric'
+    });
+
+    return { monthLabel, rate, scheduled, completed };
+  }
+
+  /**
+   * Données pour la heatmap des X derniers jours
+   */
+  static getHeatmapData(days = 30): Array<{
+    date: Date;
+    dateKey: string;
+    scheduledCount: number;
+    completedCount: number;
+  }> {
+    return this.getCompletionTimeline(days);
+  }
+
+  /**
+   * Statistiques par habitude sur une période donnée
+   */
+  static getHabitStats(days = 30): Array<{
+    habit: Habit;
+    scheduled: number;
+    completed: number;
+    rate: number;
+  }> {
+    if (days <= 0) {
+      return [];
+    }
+
+    const habits = this.loadHabits();
+    const completions = this.loadCompletions();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return habits
+      .filter((habit) => !habit.archived)
+      .map((habit) => {
+        let scheduled = 0;
+        let completed = 0;
+        const createdAt = new Date(habit.createdAt);
+        createdAt.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < days; i++) {
+          const date = new Date(today);
+          date.setDate(today.getDate() - i);
+          date.setHours(0, 0, 0, 0);
+          if (date < createdAt) {
+            continue;
+          }
+          const dayOfWeek = getDayOfWeek(date);
+          if (!habit.targetDays.includes(dayOfWeek)) {
+            continue;
+          }
+          scheduled += 1;
+          const dateKey = getDateKey(date);
+          const hasCompleted =
+            completions[dateKey]?.some((entry) => entry.habitId === habit.id) || false;
+          if (hasCompleted) {
+            completed += 1;
+          }
+        }
+
+        const rate = scheduled === 0 ? 0 : Math.round((completed / scheduled) * 100);
+
+        return {
+          habit,
+          scheduled,
+          completed,
+          rate
+        };
+      })
+      .sort((a, b) => b.rate - a.rate || b.completed - a.completed);
   }
 
   /**

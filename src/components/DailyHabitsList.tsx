@@ -60,14 +60,17 @@ export default function DailyHabitsList({ date, habits, onHabitToggle }: DailyHa
                 <button
                   onClick={() => onHabitToggle(habit.id)}
                   aria-label={habit.isCompleted ? 'Marquer comme non réalisée' : 'Marquer comme réalisée'}
+                  disabled={habit.isFuture}
                   className={cn(
                     'flex h-8 w-8 items-center justify-center rounded-2xl border-2 text-sm font-semibold transition-all',
-                    habit.isCompleted
+                    habit.isFuture
+                      ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300'
+                      : habit.isCompleted
                       ? 'border-emerald-600 bg-emerald-600 text-white shadow shadow-emerald-500/30'
                       : 'border-slate-200 bg-white text-slate-500 hover:border-indigo-200 hover:text-indigo-500'
                   )}
                 >
-                  {habit.isCompleted ? '✓' : ''}
+                  {habit.isCompleted ? '✓' : habit.isFuture ? '•' : ''}
                 </button>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -80,6 +83,11 @@ export default function DailyHabitsList({ date, habits, onHabitToggle }: DailyHa
                       {habit.name}
                     </h3>
                     <StreakBadge streak={streak} size="sm" />
+                    {habit.isFuture && (
+                      <Badge variant="outline" className="border-slate-200 text-[11px] text-slate-500">
+                        À venir
+                      </Badge>
+                    )}
                   </div>
                   {habit.description && (
                     <p
