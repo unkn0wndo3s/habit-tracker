@@ -24,6 +24,42 @@ export class NotificationService {
   }
 
   /**
+   * Programme une notification de test (10 secondes)
+   */
+  static async scheduleTestNotification(): Promise<boolean> {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      return false;
+    }
+
+    const hasPermission =
+      Notification.permission === 'granted' || (await this.requestPermission());
+
+    if (!hasPermission) {
+      return false;
+    }
+
+    setTimeout(() => {
+      const notification = new Notification("TrackIt - Notification de test", {
+        body: "Ceci est un rappel de test qui s'affiche après 10 secondes.",
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: 'test-notification',
+        requireInteraction: false,
+        data: {
+          url: window.location.origin
+        }
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+    }, 10_000);
+
+    return true;
+  }
+
+  /**
    * Active ou désactive les notifications globalement
    */
   static setNotificationsEnabled(enabled: boolean): void {

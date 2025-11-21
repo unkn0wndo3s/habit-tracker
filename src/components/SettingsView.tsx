@@ -15,6 +15,7 @@ export default function SettingsView({ onClose, onError, onSuccess }: SettingsVi
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [isTestingNotification, setIsTestingNotification] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -44,6 +45,25 @@ export default function SettingsView({ onClose, onError, onSuccess }: SettingsVi
       NotificationService.setNotificationsEnabled(false);
       setNotificationsEnabled(false);
       onSuccess?.('Notifications désactivées.');
+    }
+  };
+
+  const handleTestNotification = async () => {
+    if (!('Notification' in window)) {
+      onError?.('Les notifications ne sont pas prises en charge par ce navigateur.');
+      return;
+    }
+
+    setIsTestingNotification(true);
+    try {
+      const scheduled = await NotificationService.scheduleTestNotification();
+      if (scheduled) {
+        onSuccess?.('Notification de test programmée dans 10 secondes.');
+      } else {
+        onError?.('Impossible de programmer la notification de test. Vérifiez les permissions.');
+      }
+    } finally {
+      setIsTestingNotification(false);
     }
   };
 
@@ -79,6 +99,24 @@ export default function SettingsView({ onClose, onError, onSuccess }: SettingsVi
               className="ml-4"
             >
               {isRequestingPermission ? 'Demande...' : notificationsEnabled ? 'Activées' : 'Désactivées'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-slate-200">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 pr-4">
+              <h3 className="text-sm font-semibold text-slate-900">Notification de test</h3>
+              <p className="text-xs text-slate-600 mt-1">
+                Programme une notification dans 10 secondes pour vérifier que tout fonctionne.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleTestNotification}
+              disabled={isTestingNotification || notificationPermission === 'denied' || isRequestingPermission}
+            >
+              {isTestingNotification ? 'Programmation...' : 'Tester'}
             </Button>
           </div>
         </div>
