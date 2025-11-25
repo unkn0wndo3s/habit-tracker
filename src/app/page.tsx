@@ -11,6 +11,7 @@ import StatsView from '@/components/StatsView';
 import StreakBadge from '@/components/StreakBadge';
 import TagsFilter from '@/components/TagsFilter';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import Modal from '@/components/Modal';
 import UndoButton from '@/components/UndoButton';
 import Toast from '@/components/Toast';
 import SettingsView from '@/components/SettingsView';
@@ -23,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-type ViewMode = 'daily' | 'create' | 'manage' | 'edit' | 'stats' | 'settings';
+type ViewMode = 'daily' | 'manage' | 'edit' | 'stats' | 'settings';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -38,6 +39,7 @@ export default function Home() {
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
   const [duplicatingHabit, setDuplicatingHabit] = useState<Habit | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
   const [importFileData, setImportFileData] = useState<any>(null);
   const [canInstallPWA, setCanInstallPWA] = useState(false);
@@ -229,20 +231,22 @@ export default function Home() {
 
   const handleHabitCreated = (newHabit: Habit) => {
     setAllHabits(prev => [...prev, newHabit]);
-    
+
     if (newHabit.notificationEnabled) {
       NotificationService.scheduleNotification(newHabit).catch((error) => {
         console.error('Erreur lors de la planification du rappel:', error);
       });
     }
-    
+
     if (duplicatingHabit) {
       showSuccess('Habitude dupliquée avec succès !');
-      setDuplicatingHabit(null);
     } else {
       showSuccess('Habitude créée avec succès !');
     }
-    setViewMode('daily');
+
+    setDuplicatingHabit(null);
+    setIsCreateModalOpen(false);
+    setViewMode('manage');
   };
 
   const handleHabitUpdated = (updatedHabit: Habit) => {
@@ -394,7 +398,19 @@ export default function Home() {
       ...habit,
       name: duplicateName
     });
-    setViewMode('create');
+    setIsCreateModalOpen(true);
+    setViewMode('manage');
+  };
+
+  const handleStartCreateHabit = () => {
+    setDuplicatingHabit(null);
+    setIsCreateModalOpen(true);
+    setViewMode('manage');
+  };
+
+  const handleCancelCreateHabit = () => {
+    setIsCreateModalOpen(false);
+    setDuplicatingHabit(null);
   };
 
   const handleExportData = () => {
@@ -607,12 +623,6 @@ export default function Home() {
       action: () => setViewMode('daily')
     },
     {
-      key: 'create',
-      label: 'Créer',
-      icon: '✨',
-      action: () => setViewMode('create')
-    },
-    {
       key: 'manage',
       label: 'Gérer',
       icon: '⚙️',
@@ -668,29 +678,6 @@ export default function Home() {
             </>
           )}
 
-          {viewMode === 'create' && (
-            <Card className="bg-white/95">
-              <CardHeader>
-                <CardTitle>{duplicatingHabit ? 'Dupliquer l\'habitude' : 'Créer une habitude'}</CardTitle>
-                <CardDescription>
-                  {duplicatingHabit ? 'Modifiez les données si nécessaire avant de sauvegarder' : 'Définissez un nom, des tags et un planning clair'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CreateHabitForm 
-                  onHabitCreated={handleHabitCreated} 
-                  onError={showError}
-                  initialValues={duplicatingHabit ? {
-                    name: duplicatingHabit.name,
-                    description: duplicatingHabit.description,
-                    targetDays: duplicatingHabit.targetDays,
-                    tags: duplicatingHabit.tags
-                  } : undefined}
-                />
-              </CardContent>
-            </Card>
-          )}
-
           {viewMode === 'edit' && editingHabit && (
             <Card className="bg-white/95">
               <CardHeader className="flex items-center justify-between">
@@ -730,6 +717,20 @@ export default function Home() {
                 <CardDescription>Filtrez, éditez et organisez vos rituels</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">Créer une habitude</p>
+                      <p className="text-xs text-slate-500">
+                        Définissez un nom, des tags et un planning clair ou dupliquez une habitude existante.
+                      </p>
+                    </div>
+                    <Button className="w-full md:w-auto" onClick={handleStartCreateHabit}>
+                      + Créer une habitude
+                    </Button>
+                  </div>
+                </div>
+
                 {/* Champ de recherche */}
                 <div className="relative">
                   <Input
@@ -851,10 +852,6 @@ export default function Home() {
             ))}
           </div>
               )}
-
-                <Button className="w-full" onClick={() => setViewMode('create')}>
-                  + Créer une habitude
-                </Button>
 
                 <div className="border-t border-slate-200 pt-4">
                   <p className="text-sm font-medium text-slate-700 mb-3">Sauvegarde et transfert</p>
@@ -980,6 +977,53 @@ export default function Home() {
             </div>
           </nav>
         </div>
+
+        <Modal
+          isOpen={isCreateModalOpen}
+          onClose={handleCancelCreateHabit}
+          title={duplicatingHabit ? "Dupliquer une habitude" : "Créer une habitude"}
+          size="lg"
+          hideCloseButton
+          headerContent={
+            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="text-base font-semibold text-slate-900">
+                  {duplicatingHabit ? "Dupliquer l'habitude" : 'Créer une habitude'}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {duplicatingHabit
+                    ? 'Adaptez les paramètres avant d’enregistrer la copie.'
+                    : 'Définissez un nom, des tags et un planning clair.'}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={handleCancelCreateHabit}>
+                  Annuler
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCancelCreateHabit}>
+                  Terminer
+                </Button>
+              </div>
+            </div>
+          }
+        >
+          <CreateHabitForm
+            onHabitCreated={handleHabitCreated}
+            onError={showError}
+            initialValues={
+              duplicatingHabit
+                ? {
+                    name: duplicatingHabit.name,
+                    description: duplicatingHabit.description,
+                    targetDays: duplicatingHabit.targetDays,
+                    tags: duplicatingHabit.tags,
+                    notificationEnabled: duplicatingHabit.notificationEnabled,
+                    notificationTime: duplicatingHabit.notificationTime
+                  }
+                : undefined
+            }
+          />
+        </Modal>
 
         <ConfirmationModal
           isOpen={!!habitToDelete}

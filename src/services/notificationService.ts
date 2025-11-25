@@ -5,6 +5,16 @@ import { VAPID_PUBLIC_KEY } from '@/config/pushPublicKey';
 
 const NOTIFICATIONS_ENABLED_KEY = 'trackit-notifications-enabled';
 const SUBSCRIPTION_ID_KEY = 'trackit-subscription-id';
+
+function arrayBufferToBase64(buffer: ArrayBuffer | null): string {
+  if (!buffer) return '';
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+}
 export class NotificationService {
   private static cachedApplicationServerKey: ArrayBuffer | null = null;
 
@@ -151,14 +161,32 @@ export class NotificationService {
       });
     }
 
+    // Convertir PushSubscription en objet sérialisable
+    const p256dhKey = subscription.getKey('p256dh');
+    const authKey = subscription.getKey('auth');
+    
+    if (!p256dhKey || !authKey) {
+      console.error('Clés de subscription manquantes');
+      return null;
+    }
+
+    const subscriptionData = {
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: arrayBufferToBase64(p256dhKey),
+        auth: arrayBufferToBase64(authKey)
+      }
+    };
+
     const response = await fetch('/api/notifications/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscription })
+      body: JSON.stringify({ subscription: subscriptionData })
     });
 
     if (!response.ok) {
-      console.error('Impossible de sauvegarder la subscription push.');
+      const errorText = await response.text().catch(() => 'Erreur inconnue');
+      console.error('Impossible de sauvegarder la subscription push:', response.status, errorText);
       return null;
     }
 
