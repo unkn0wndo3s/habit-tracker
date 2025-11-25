@@ -8,15 +8,15 @@ type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'icon';
 
 const variantClasses: Record<ButtonVariant, string> = {
   default:
-    'bg-indigo-600 text-white shadow shadow-indigo-500/40 hover:bg-indigo-500 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500',
+    'bg-gradient-to-r from-indigo-500 via-indigo-400 to-purple-500 text-white shadow-[0_15px_35px_-20px_rgba(99,102,241,0.9)] hover:brightness-110 focus-visible:ring-2 focus-visible:ring-indigo-300',
   secondary:
-    'bg-slate-100 text-slate-900 shadow-sm hover:bg-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-300',
+    'border border-white/10 bg-slate-900/60 text-slate-100 shadow-inner shadow-black/20 hover:bg-slate-900/40 focus-visible:ring-2 focus-visible:ring-indigo-400/40',
   outline:
-    'border border-slate-300 bg-white text-slate-900 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-indigo-500/60',
+    'border border-white/20 bg-transparent text-slate-100 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-indigo-400/50',
   ghost:
-    'bg-transparent text-slate-700 hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-500/40',
+    'bg-transparent text-slate-300 hover:text-white hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-indigo-400/40',
   destructive:
-    'bg-rose-600 text-white shadow-sm shadow-rose-500/30 hover:bg-rose-500 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-500'
+    'bg-gradient-to-r from-rose-600 to-orange-500 text-white shadow-[0_15px_35px_-20px_rgba(239,68,68,0.8)] hover:brightness-110 focus-visible:ring-2 focus-visible:ring-rose-300'
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -42,7 +42,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center rounded-xl font-medium transition-all duration-150 focus-visible:outline-none disabled:opacity-50 disabled:pointer-events-none',
+          'inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:opacity-50 disabled:pointer-events-none',
           variantClass,
           sizeClass,
           className

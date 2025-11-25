@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { Icon } from './Icon';
 
 interface TagsInputProps {
   tags: string[];
@@ -72,9 +73,11 @@ export default function TagsInput({ tags, onChange, availableTags = [] }: TagsIn
   return (
     <div className="relative" ref={inputRef}>
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-700">Tags (optionnel)</label>
+        <label className="text-sm font-medium text-slate-100">Tags (optionnel)</label>
         {tags.length > 0 && (
-          <Badge variant="secondary" className="text-[11px]">{tags.length}</Badge>
+          <Badge variant="secondary" className="text-[11px] border border-slate-700 bg-slate-900/40 text-slate-200">
+            {tags.length}
+          </Badge>
         )}
       </div>
 
@@ -83,18 +86,16 @@ export default function TagsInput({ tags, onChange, availableTags = [] }: TagsIn
           {tags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700"
+              className="inline-flex items-center gap-1 rounded-full border border-indigo-500/40 bg-indigo-500/15 px-3 py-1 text-xs font-medium text-indigo-100 shadow-[0_0_20px_rgba(99,102,241,0.25)]"
             >
               <span>#{tag}</span>
               <button
                 type="button"
                 onClick={() => removeTag(tag)}
-                className="text-indigo-500 hover:text-indigo-700 focus:outline-none"
+                className="text-indigo-200 transition hover:text-white focus:outline-none"
                 aria-label={`Supprimer le tag ${tag}`}
               >
-                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <Icon name="close" className="h-3.5 w-3.5" />
               </button>
             </span>
           ))}
@@ -116,7 +117,7 @@ export default function TagsInput({ tags, onChange, availableTags = [] }: TagsIn
           disabled={!canAddTag}
           variant="secondary"
           size="sm"
-          className="whitespace-nowrap px-5"
+          className="whitespace-nowrap border border-indigo-500/30 bg-indigo-500/20 px-5 text-slate-100 hover:bg-indigo-500/40"
         >
           Ajouter
         </Button>
@@ -124,13 +125,13 @@ export default function TagsInput({ tags, onChange, availableTags = [] }: TagsIn
 
       {/* Suggestions */}
       {showSuggestions && filteredSuggestions.length > 0 && (
-        <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+        <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-xl border border-slate-700 bg-slate-950/90 shadow-2xl shadow-black/40 backdrop-blur">
           {filteredSuggestions.map((suggestion) => (
             <button
               key={suggestion}
               type="button"
               onClick={() => handleSuggestionClick(suggestion)}
-              className="w-full px-4 py-2 text-left text-sm text-slate-700 transition hover:bg-indigo-50 focus:bg-indigo-50 focus:outline-none"
+              className="w-full px-4 py-2 text-left text-sm text-slate-200 transition hover:bg-indigo-950/30 focus:bg-indigo-950/30 focus:outline-none"
             >
               {suggestion}
             </button>

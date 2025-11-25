@@ -125,15 +125,15 @@ export default function StatsView({ habits }: StatsViewProps) {
   return (
     <div className="space-y-5 p-4 md:p-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Statistiques</p>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Visualisez votre constance</h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Statistiques</p>
+        <h1 className="mt-1 text-2xl font-semibold text-slate-100">Visualisez votre constance</h1>
+        <p className="text-sm text-slate-400">
           Comparez vos habitudes sur différentes périodes pour repérer vos temps forts et les axes
           de progression.
         </p>
       </div>
 
-      <Card className="border border-slate-200 bg-gradient-to-br from-indigo-50 to-white shadow-sm shadow-indigo-100">
+      <Card className="border border-slate-800/70 bg-gradient-to-br from-indigo-950/60 via-slate-900 to-slate-900 shadow-2xl shadow-black/40">
         <CardHeader className="flex flex-col gap-1">
           <CardTitle>Taux de complétion mensuel</CardTitle>
           <CardDescription>
@@ -142,23 +142,23 @@ export default function StatsView({ habits }: StatsViewProps) {
         </CardHeader>
         <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm text-slate-500">Taux de complétion</p>
-            <p className="text-4xl font-semibold text-indigo-700">{monthlyStats.rate}%</p>
+            <p className="text-sm text-slate-400">Taux de complétion</p>
+            <p className="text-4xl font-semibold text-indigo-200">{monthlyStats.rate}%</p>
           </div>
-          <div className="flex gap-4 text-sm text-slate-600">
+          <div className="flex gap-4 text-sm text-slate-300">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Planifiées</p>
-              <p className="text-lg font-semibold text-slate-900">{monthlyStats.scheduled}</p>
+              <p className="text-lg font-semibold text-slate-100">{monthlyStats.scheduled}</p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Réalisées</p>
-              <p className="text-lg font-semibold text-slate-900">{monthlyStats.completed}</p>
+              <p className="text-lg font-semibold text-slate-100">{monthlyStats.completed}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border border-slate-200 bg-white/95 shadow-sm shadow-slate-100">
+      <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30 backdrop-blur">
         <CardHeader>
           <CardTitle>Heatmap des 30 derniers jours</CardTitle>
           <CardDescription>
@@ -167,7 +167,7 @@ export default function StatsView({ habits }: StatsViewProps) {
         </CardHeader>
         <CardContent>
           {heatmapData.length === 0 ? (
-            <p className="text-sm text-slate-500">Aucune donnée disponible.</p>
+            <p className="text-sm text-slate-400">Aucune donnée disponible.</p>
           ) : (
             <div className="grid grid-cols-[repeat(10,minmax(20px,1fr))] gap-1">
               {heatmapData.map((point) => {
@@ -179,7 +179,7 @@ export default function StatsView({ habits }: StatsViewProps) {
                   <div
                     key={point.dateKey}
                     className={cn(
-                      'h-8 rounded-md border text-[10px] font-semibold text-white transition',
+                      'h-8 rounded-md border text-[10px] font-semibold transition',
                       getHeatmapColor(rate)
                     )}
                     title={`${formatLongDate(point.date)} · ${point.completedCount}/${
@@ -195,7 +195,7 @@ export default function StatsView({ habits }: StatsViewProps) {
         </CardContent>
       </Card>
 
-      <Card className="border border-slate-200 bg-white/95 shadow-sm shadow-slate-100">
+      <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30 backdrop-blur">
         <CardHeader>
           <CardTitle>Statistiques par habitude (30 jours)</CardTitle>
           <CardDescription>
@@ -204,21 +204,21 @@ export default function StatsView({ habits }: StatsViewProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           {habitStats.length === 0 ? (
-            <p className="text-sm text-slate-500">Aucune habitude active pour le moment.</p>
+            <p className="text-sm text-slate-400">Aucune habitude active pour le moment.</p>
           ) : (
             habitStats.map(({ habit, rate, completed, scheduled }) => (
               <div
                 key={habit.id}
-                className="flex flex-col gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4 text-sm text-slate-600 md:flex-row md:items-center md:justify-between"
+                className="flex flex-col gap-2 rounded-2xl border border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-300 md:flex-row md:items-center md:justify-between"
               >
                 <div>
-                  <p className="text-base font-semibold text-slate-900">{habit.name}</p>
+                  <p className="text-base font-semibold text-slate-100">{habit.name}</p>
                   {habit.description && (
-                    <p className="text-xs text-slate-500">{habit.description}</p>
+                    <p className="text-xs text-slate-400">{habit.description}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-4">
-                  <Badge variant="secondary" className="text-xs font-semibold text-slate-700">
+                  <Badge variant="secondary" className="text-xs font-semibold text-slate-200">
                     {completed}/{scheduled} réalisées
                   </Badge>
                   <Badge
@@ -226,10 +226,10 @@ export default function StatsView({ habits }: StatsViewProps) {
                     className={cn(
                       'text-xs font-semibold',
                       rate >= 80
-                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                        ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-100'
                         : rate >= 50
-                        ? 'border-amber-200 bg-amber-50 text-amber-700'
-                        : 'border-rose-200 bg-rose-50 text-rose-700'
+                        ? 'border-amber-400/60 bg-amber-400/15 text-amber-100'
+                        : 'border-rose-400/60 bg-rose-500/20 text-rose-100'
                     )}
                   >
                     {rate}%
@@ -242,7 +242,7 @@ export default function StatsView({ habits }: StatsViewProps) {
       </Card>
 
       {/* Segmented control pour sélectionner la période */}
-      <Card className="border border-slate-200 bg-white/95 shadow-sm shadow-slate-100">
+      <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30 backdrop-blur">
         <CardHeader>
           <CardTitle>Progression dans le temps</CardTitle>
           <CardDescription>Sélectionnez une période pour voir l'évolution de vos habitudes</CardDescription>
@@ -257,8 +257,8 @@ export default function StatsView({ habits }: StatsViewProps) {
                 className={cn(
                   'rounded-xl border px-4 py-2 text-sm font-medium transition-all',
                   selectedTimeframe === timeframe.key
-                    ? 'border-indigo-400 bg-indigo-50 text-indigo-700 shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:bg-slate-50'
+                    ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-100 shadow-[0_10px_30px_rgba(99,102,241,0.2)]'
+                    : 'border-slate-700 bg-slate-900/40 text-slate-300 hover:border-indigo-500/40 hover:text-slate-100'
                 )}
               >
                 {timeframe.label}
@@ -282,7 +282,7 @@ export default function StatsView({ habits }: StatsViewProps) {
         return (
           <Card
             key={timeframe.key}
-            className="border border-slate-200/80 bg-white/95 shadow-sm shadow-slate-100"
+            className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30"
           >
             <CardHeader className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
@@ -290,7 +290,7 @@ export default function StatsView({ habits }: StatsViewProps) {
                   <CardTitle>{timeframe.label}</CardTitle>
                   <CardDescription>{timeframe.description}</CardDescription>
                 </div>
-                <Badge variant="secondary" className="text-xs font-semibold text-slate-700">
+                <Badge variant="secondary" className="text-xs font-semibold text-slate-200">
                   {summary.avgRate}% de réussite
                 </Badge>
               </div>
@@ -301,26 +301,26 @@ export default function StatsView({ habits }: StatsViewProps) {
                   <div className="flex items-end gap-2 overflow-x-auto">
                     {chartData.map((bucket) => (
                       <div key={bucket.label} className="flex min-w-[28px] flex-1 flex-col gap-2">
-                        <div className="flex h-32 items-end rounded-full bg-slate-100 p-1">
+                        <div className="flex h-32 items-end rounded-full bg-slate-800/50 p-1">
                           <div
-                            className="w-full rounded-full bg-gradient-to-t from-indigo-400 to-indigo-600 transition-all"
+                            className="w-full rounded-full bg-gradient-to-t from-indigo-900 via-indigo-500 to-indigo-400 transition-all"
                             style={{ height: `${bucket.rate}%` }}
                             aria-label={`Taux de ${bucket.rate}%`}
                           />
                         </div>
-                        <p className="text-center text-[11px] font-medium text-slate-500">
+                        <p className="text-center text-[11px] font-medium text-slate-400">
                           {bucket.label}
                         </p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="grid gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 text-sm text-slate-600 md:grid-cols-3">
+                  <div className="grid gap-4 rounded-2xl border border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-300 md:grid-cols-3">
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                         Habitudes réalisées
                       </p>
-                      <p className="mt-1 text-2xl font-semibold text-slate-900">
+                      <p className="mt-1 text-2xl font-semibold text-slate-100">
                         {summary.totalCompleted}
                       </p>
                     </div>
@@ -328,7 +328,7 @@ export default function StatsView({ habits }: StatsViewProps) {
                       <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                         {timeframe.groupByMonth ? 'Mois suivis' : 'Jours suivis'}
                       </p>
-                      <p className="mt-1 text-2xl font-semibold text-slate-900">
+                      <p className="mt-1 text-2xl font-semibold text-slate-100">
                         {summary.daysWithSchedule}
                       </p>
                     </div>
@@ -337,14 +337,14 @@ export default function StatsView({ habits }: StatsViewProps) {
                         {timeframe.groupByMonth ? 'Meilleur mois' : 'Top jour'}
                       </p>
                       {summary.bestDay ? (
-                        <p className="mt-1 text-base font-semibold text-slate-900">
+                        <p className="mt-1 text-base font-semibold text-slate-100">
                           {summary.bestDay.label}{' '}
-                          <span className="text-sm font-normal text-slate-600">
+                          <span className="text-sm font-normal text-slate-400">
                             ({summary.bestDay.rate}%)
                           </span>
                         </p>
                       ) : (
-                        <p className="mt-1 text-base font-semibold text-slate-900">
+                        <p className="mt-1 text-base font-semibold text-slate-100">
                           Pas encore de données
                         </p>
                       )}
@@ -352,7 +352,7 @@ export default function StatsView({ habits }: StatsViewProps) {
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-400">
                   Aucune habitude planifiée sur cette période pour le moment.
                 </p>
               )}
@@ -473,18 +473,18 @@ function formatLongDate(date: Date) {
 
 function getHeatmapColor(rate: number) {
   if (rate === 0) {
-    return 'border-slate-200 bg-slate-100';
+    return 'border-slate-800/70 bg-slate-900/40 text-slate-500';
   }
   if (rate < 30) {
-    return 'border-rose-200 bg-rose-200 text-rose-900';
+    return 'border-rose-500/40 bg-rose-500/20 text-rose-100';
   }
   if (rate < 60) {
-    return 'border-amber-200 bg-amber-300 text-amber-900';
+    return 'border-amber-400/40 bg-amber-400/20 text-amber-100';
   }
   if (rate < 90) {
-    return 'border-lime-200 bg-lime-300 text-lime-900';
+    return 'border-emerald-400/40 bg-emerald-400/20 text-emerald-100';
   }
-  return 'border-emerald-300 bg-emerald-400 text-emerald-900';
+  return 'border-emerald-300/60 bg-emerald-300/25 text-emerald-50';
 }
 
 

@@ -1,5 +1,7 @@
 'use client';
 
+import { Icon } from './Icon';
+
 interface StreakBadgeProps {
   streak: number;
   size?: 'sm' | 'md' | 'lg';
@@ -23,25 +25,23 @@ export default function StreakBadge({ streak, size = 'md' }: StreakBadgeProps) {
 
   const getColorClasses = () => {
     if (streak >= 30) {
-      return 'bg-purple-100 text-purple-800 border-purple-300';
+      return 'border-purple-500/40 bg-purple-500/20 text-purple-100';
     } else if (streak >= 14) {
-      return 'bg-blue-100 text-blue-800 border-blue-300';
+      return 'border-blue-500/40 bg-blue-500/20 text-blue-100';
     } else if (streak >= 7) {
-      return 'bg-green-100 text-green-800 border-green-300';
+      return 'border-emerald-500/40 bg-emerald-500/20 text-emerald-100';
     } else {
-      return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      return 'border-amber-400/40 bg-amber-400/20 text-amber-100';
     }
   };
 
-  const getIcon = () => {
+  const getIconName = () => {
     if (streak >= 30) {
-      return '🔥';
+      return 'flame';
     } else if (streak >= 14) {
-      return '⭐';
-    } else if (streak >= 7) {
-      return '✨';
+      return 'star';
     } else {
-      return '🔥';
+      return 'sparkles';
     }
   };
 
@@ -50,7 +50,7 @@ export default function StreakBadge({ streak, size = 'md' }: StreakBadgeProps) {
       className={`inline-flex items-center gap-1 rounded-full border font-semibold ${getSizeClasses()} ${getColorClasses()}`}
       title={`Série de ${streak} jour${streak > 1 ? 's' : ''}`}
     >
-      <span>{getIcon()}</span>
+      <Icon name={getIconName()} className="h-3.5 w-3.5" strokeWidth={2} />
       <span>{streak} jour{streak > 1 ? 's' : ''}</span>
     </span>
   );

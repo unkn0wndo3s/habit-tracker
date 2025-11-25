@@ -68,7 +68,7 @@ export default function SettingsView({ onError, onSuccess }: SettingsViewProps) 
   };
 
   return (
-    <Card className="bg-white/95">
+    <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30 backdrop-blur">
       <CardHeader>
         <CardTitle>Paramètres</CardTitle>
         <CardDescription>Gérez vos préférences et notifications</CardDescription>
@@ -77,12 +77,12 @@ export default function SettingsView({ onError, onSuccess }: SettingsViewProps) 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
-              <p className="text-xs text-slate-600 mt-1">
+              <h3 className="text-sm font-semibold text-slate-100">Notifications</h3>
+              <p className="mt-1 text-xs text-slate-400">
                 Recevez des rappels pour vos habitudes planifiées
               </p>
               {notificationPermission === 'denied' && (
-                <p className="text-xs text-rose-600 mt-2">
+                <p className="mt-2 text-xs text-rose-300">
                   Les notifications sont bloquées. Veuillez les autoriser dans les paramètres de votre navigateur.
                 </p>
               )}
@@ -98,11 +98,11 @@ export default function SettingsView({ onError, onSuccess }: SettingsViewProps) 
           </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-200">
+        <div className="border-t border-slate-800/80 pt-4">
           <div className="flex items-start justify-between">
             <div className="flex-1 pr-4">
-              <h3 className="text-sm font-semibold text-slate-900">Notification de test</h3>
-              <p className="text-xs text-slate-600 mt-1">
+              <h3 className="text-sm font-semibold text-slate-100">Notification de test</h3>
+              <p className="mt-1 text-xs text-slate-400">
                 Programme une notification dans 10 secondes pour vérifier que tout fonctionne.
               </p>
             </div>

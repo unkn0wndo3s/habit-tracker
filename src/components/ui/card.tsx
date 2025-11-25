@@ -7,7 +7,8 @@ function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/60',
+        'relative overflow-hidden rounded-3xl border border-white/8 bg-[radial-gradient(circle_at_20%_20%,rgba(99,102,241,0.12),transparent_60%),linear-gradient(145deg,rgba(8,13,30,0.76),rgba(4,7,20,0.7))] shadow-[0_30px_80px_-50px_rgba(2,6,23,0.85)] backdrop-blur-2xl transition-all duration-300',
+        'before:pointer-events-none before:absolute before:inset-0 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100 before:bg-[radial-gradient(circle_at_30%_20%,rgba(129,140,248,0.22),transparent_50%)]',
         className
       )}
       {...props}
@@ -16,15 +17,15 @@ function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
 }
 
 function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('px-5 pb-2 pt-5', className)} {...props} />;
+  return <div className={cn('px-5 pb-2 pt-5 text-slate-200', className)} {...props} />;
 }
 
 function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn('text-lg font-semibold tracking-tight text-slate-900', className)} {...props} />;
+  return <h3 className={cn('text-lg font-semibold tracking-tight text-slate-50', className)} {...props} />;
 }
 
 function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('text-sm text-slate-500', className)} {...props} />;
+  return <p className={cn('text-sm text-slate-400', className)} {...props} />;
 }
 
 function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Habit, DailyHabit } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
@@ -23,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Icon, IconName } from '@/components/Icon';
 
 type ViewMode = 'daily' | 'manage' | 'edit' | 'stats' | 'settings';
 
@@ -613,53 +615,82 @@ export default function Home() {
   const navItems: Array<{
     key: ViewMode;
     label: string;
-    icon: string;
+    icon: IconName;
     action: () => void;
   }> = [
     {
       key: 'daily',
       label: 'Aujourd’hui',
-      icon: '📅',
+      icon: 'calendar',
       action: () => setViewMode('daily')
     },
     {
       key: 'manage',
       label: 'Gérer',
-      icon: '⚙️',
+      icon: 'settings',
       action: () => setViewMode('manage')
     },
     {
       key: 'settings',
       label: 'Paramètres',
-      icon: '🔔',
+      icon: 'bell',
       action: () => setViewMode('settings')
     },
     {
       key: 'stats',
       label: 'Statistiques',
-      icon: '📊',
+      icon: 'chart',
       action: handleViewStats
     }
+  ];
+
+  const orbitalLayers = [
+    { size: 260, duration: '26s', color: 'rgba(129, 140, 248, 0.55)' },
+    { size: 360, duration: '32s', color: 'rgba(56, 189, 248, 0.45)' },
+    { size: 460, duration: '38s', color: 'rgba(16, 185, 129, 0.4)' }
   ];
 
   const shouldDisplayInstallCTA = canInstallPWA && !isAppInstalled;
 
   return (
-    <div className="min-h-screen pb-28 pt-6">
-      <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col gap-5 px-4 pb-10">
+    <div className="relative min-h-screen overflow-hidden pb-28 pt-6">
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-20 top-10 h-72 w-72 rounded-full bg-violet-500/25 blur-[160px]" />
+        <div className="absolute right-0 top-1/4 h-80 w-80 rounded-full bg-sky-500/20 blur-[140px]" />
+        <div className="absolute bottom-10 left-1/3 h-72 w-72 rounded-full bg-emerald-400/10 blur-[150px]" />
+        <div className="orbital-scene">
+          <div className="orbital-anchor">
+            {orbitalLayers.map((layer, index) => (
+              <div
+                key={`orbit-${index}`}
+                className="orbital-orbit"
+                style={
+                  {
+                    '--orbit-size': `${layer.size}px`,
+                    '--orbit-duration': layer.duration,
+                    '--orbit-color': layer.color
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col gap-5 px-4 pb-10">
         <main className="flex-1 space-y-4 pt-2">
           {shouldDisplayInstallCTA && (
-            <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50 to-white">
-              <CardContent className="flex flex-col gap-3 p-4">
+            <Card className="border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-900 shadow-xl shadow-indigo-900/40">
+              <CardContent className="flex flex-col gap-3 p-5">
                 <div>
-                  <p className="text-sm font-semibold text-indigo-900">Installer l'app</p>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-sm font-semibold text-indigo-100">Installer l'app</p>
+                  <p className="text-xs text-slate-300">
                     Ajoutez TrackIt sur votre écran d'accueil pour un accès hors ligne et en plein écran.
                   </p>
                 </div>
                 <Button
                   onClick={handleInstallApp}
-                  className="w-full bg-indigo-600 text-white hover:bg-indigo-500"
+                  className="w-full border border-indigo-500/50 bg-indigo-500/30 text-slate-50 shadow-[0_15px_40px_rgba(99,102,241,0.35)] hover:bg-indigo-500/50"
                 >
                   Installer l'app
                 </Button>
@@ -670,7 +701,7 @@ export default function Home() {
           {viewMode === 'daily' && (
             <>
               <DateNavigation currentDate={currentDate} onDateChange={handleDateChange} />
-              <Card className="bg-white/95">
+              <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30 backdrop-blur">
                 <CardContent className="p-4">
                   <DailyHabitsList date={currentDate} habits={dailyHabits} onHabitToggle={handleHabitToggle} />
                 </CardContent>
@@ -679,14 +710,14 @@ export default function Home() {
           )}
 
           {viewMode === 'edit' && editingHabit && (
-            <Card className="bg-white/95">
+            <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30">
               <CardHeader className="flex items-center justify-between">
                 <div>
                   <CardTitle>Modifier l&apos;habitude</CardTitle>
                   <CardDescription>Ajustez les détails pour rester aligné</CardDescription>
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleCancelEdit} aria-label="Fermer l'édition">
-                  ✕
+                  <Icon name="close" className="h-5 w-5" />
                 </Button>
               </CardHeader>
               <CardContent>
@@ -696,7 +727,7 @@ export default function Home() {
           )}
 
           {viewMode === 'stats' && (
-            <Card className="bg-white/95">
+            <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30">
               <CardContent className="p-0">
                 <StatsView habits={allHabits.filter(h => !h.archived)} />
               </CardContent>
@@ -711,21 +742,21 @@ export default function Home() {
           )}
 
           {viewMode === 'manage' && (
-            <Card className="bg-white/95">
+            <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30">
               <CardHeader>
                 <CardTitle>Gérer les habitudes</CardTitle>
                 <CardDescription>Filtrez, éditez et organisez vos rituels</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
+                <div className="rounded-2xl border border-slate-700 bg-slate-900/40 p-4 shadow-inner shadow-black/30">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">Créer une habitude</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-semibold text-slate-100">Créer une habitude</p>
+                      <p className="text-xs text-slate-400">
                         Définissez un nom, des tags et un planning clair ou dupliquez une habitude existante.
                       </p>
                     </div>
-                    <Button className="w-full md:w-auto" onClick={handleStartCreateHabit}>
+                    <Button className="w-full border border-indigo-500/40 bg-indigo-500/20 text-slate-100 md:w-auto" onClick={handleStartCreateHabit}>
                       + Créer une habitude
                     </Button>
                   </div>
@@ -741,16 +772,16 @@ export default function Home() {
                     className="pr-10"
                   />
                   {searchQuery && (
-                <button
+                    <button
                       type="button"
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-100"
                       aria-label="Effacer la recherche"
                     >
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                </button>
+                    </button>
                   )}
               </div>
 
@@ -759,16 +790,18 @@ export default function Home() {
                 )}
 
                 {filteredHabits().length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-3xl">📝</div>
-                    <h3 className="text-lg font-semibold text-slate-900">
+                  <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-center shadow-inner shadow-black/30">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70">
+                      <Icon name="note" className="h-8 w-8 text-indigo-200" strokeWidth={1.4} />
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-100">
                       {searchQuery.trim() 
                         ? 'Aucune habitude trouvée' 
                         : selectedTag 
                         ? `Aucune habitude avec le tag "${selectedTag}"` 
                         : 'Aucune habitude créée'}
                   </h3>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-400">
                       {searchQuery.trim() 
                         ? 'Essayez une autre recherche ou effacez le champ pour voir toutes les habitudes' 
                         : selectedTag 
@@ -781,20 +814,20 @@ export default function Home() {
                     {filteredHabits().map((habit) => (
                       <div
                         key={habit.id}
-                        className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 shadow-inner shadow-white/50"
+                        className="rounded-2xl border border-slate-700 bg-slate-900/40 p-4 shadow-inner shadow-black/30"
                       >
                         <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
                             <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-base font-semibold text-slate-900">{habit.name}</h3>
+                              <h3 className="text-base font-semibold text-slate-100">{habit.name}</h3>
                               <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
                             </div>
                           {habit.description && (
-                              <p className="mt-1 text-sm text-slate-600">{habit.description}</p>
+                              <p className="mt-1 text-sm text-slate-400">{habit.description}</p>
                           )}
                             <div className="mt-3 flex flex-wrap gap-1.5">
                             {habit.targetDays.map((day) => (
-                                <Badge key={day} variant="outline" className="border-indigo-100 bg-white text-xs text-indigo-600">
+                                <Badge key={day} variant="outline" className="border-indigo-500/40 bg-indigo-500/10 text-xs text-indigo-100">
                                 {day.charAt(0).toUpperCase() + day.slice(1)}
                                 </Badge>
                               ))}
@@ -802,7 +835,7 @@ export default function Home() {
                             {habit.tags && habit.tags.length > 0 && (
                               <div className="mt-2 flex flex-wrap gap-1.5">
                                 {habit.tags.map((tag) => (
-                                  <Badge key={tag} variant="secondary" className="text-xs text-slate-600">
+                                  <Badge key={tag} variant="secondary" className="text-xs border border-slate-700 bg-slate-900/20 text-slate-200">
                                     #{tag}
                                   </Badge>
                             ))}
@@ -813,38 +846,38 @@ export default function Home() {
                             <Button
                               variant="ghost"
                               size="icon"
-                            onClick={() => handleEditHabit(habit)}
-                              className="text-slate-500 hover:text-indigo-600"
+                              onClick={() => handleEditHabit(habit)}
+                              className="text-slate-400 hover:text-indigo-300"
                               aria-label="Modifier l'habitude"
                             >
-                              ✏️
+                              <Icon name="pencil" className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDuplicateHabit(habit)}
-                              className="text-slate-500 hover:text-blue-600"
+                              className="text-slate-400 hover:text-blue-300"
                               aria-label="Dupliquer l'habitude"
                             >
-                              📋
+                              <Icon name="copy" className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleArchiveHabit(habit)}
-                              className="text-slate-500 hover:text-amber-600"
+                              className="text-slate-400 hover:text-amber-300"
                               aria-label="Archiver l'habitude"
                             >
-                              📦
+                              <Icon name="archive" className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => handleDeleteHabit(habit)}
-                              className="text-slate-400 hover:text-rose-600"
+                              className="text-slate-500 hover:text-rose-300"
                               aria-label="Supprimer l'habitude"
                             >
-                              🗑️
+                              <Icon name="trash" className="h-4 w-4" />
                             </Button>
                         </div>
                       </div>
@@ -853,15 +886,16 @@ export default function Home() {
           </div>
               )}
 
-                <div className="border-t border-slate-200 pt-4">
-                  <p className="text-sm font-medium text-slate-700 mb-3">Sauvegarde et transfert</p>
+                <div className="border-t border-slate-800/70 pt-4">
+                  <p className="mb-3 text-sm font-medium text-slate-100">Sauvegarde et transfert</p>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 border border-slate-700 bg-slate-900/40 text-slate-100"
                       onClick={handleExportData}
                     >
-                      📥 Exporter
+                      <Icon name="export" className="mr-2 h-4 w-4" />
+                      Exporter
                     </Button>
                     <label className="flex-1 cursor-pointer">
                       <input
@@ -873,11 +907,12 @@ export default function Home() {
                       />
                       <Button
                         variant="outline"
-                        className="w-full"
+                        className="w-full border border-slate-700 bg-slate-900/40 text-slate-100"
                         type="button"
                         onClick={() => document.getElementById('import-file-input')?.click()}
                       >
-                        📤 Importer
+                        <Icon name="import" className="mr-2 h-4 w-4" />
+                        Importer
                       </Button>
                     </label>
                   </div>
@@ -887,8 +922,8 @@ export default function Home() {
                 {archivedHabits().length > 0 && (
                   <div className="mt-8 space-y-4">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-slate-700">Archivées</h3>
-                      <Badge variant="secondary" className="text-xs">
+                      <h3 className="text-base font-semibold text-slate-200">Archivées</h3>
+                      <Badge variant="secondary" className="text-xs border border-slate-700 bg-slate-900/40 text-slate-100">
                         {archivedHabits().length}
                       </Badge>
                     </div>
@@ -896,23 +931,23 @@ export default function Home() {
                       {archivedHabits().map((habit) => (
                         <div
                           key={habit.id}
-                          className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-inner shadow-white/50 opacity-75"
+                          className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-100 shadow-inner shadow-black/30"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-base font-semibold text-slate-700 line-through">{habit.name}</h3>
-                                <Badge variant="outline" className="border-amber-300 bg-amber-100 text-xs text-amber-700">
+                                <h3 className="text-base font-semibold text-amber-100 line-through">{habit.name}</h3>
+                                <Badge variant="outline" className="border-amber-400/70 bg-amber-500/15 text-xs text-amber-100">
                                   Archivée
                                 </Badge>
                                 <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
                               </div>
                               {habit.description && (
-                                <p className="mt-1 text-sm text-slate-500">{habit.description}</p>
+                                <p className="mt-1 text-sm text-amber-50/80">{habit.description}</p>
                               )}
                               <div className="mt-3 flex flex-wrap gap-1.5">
                                 {habit.targetDays.map((day) => (
-                                  <Badge key={day} variant="outline" className="border-amber-200 bg-white text-xs text-amber-600">
+                                  <Badge key={day} variant="outline" className="border-amber-400/60 bg-amber-500/10 text-xs text-amber-100">
                                     {day.charAt(0).toUpperCase() + day.slice(1)}
                                   </Badge>
                                 ))}
@@ -920,7 +955,7 @@ export default function Home() {
                               {habit.tags && habit.tags.length > 0 && (
                                 <div className="mt-2 flex flex-wrap gap-1.5">
                                   {habit.tags.map((tag) => (
-                                    <Badge key={tag} variant="secondary" className="text-xs text-slate-500">
+                                    <Badge key={tag} variant="secondary" className="text-xs border border-amber-400/40 bg-amber-500/10 text-amber-50">
                                       #{tag}
                                     </Badge>
                                   ))}
@@ -932,7 +967,7 @@ export default function Home() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleUnarchiveHabit(habit)}
-                                className="text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                                className="text-amber-100 hover:bg-amber-400/20"
                                 aria-label="Réactiver l'habitude"
                               >
                                 Réactiver
@@ -951,7 +986,7 @@ export default function Home() {
 
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-4">
           <nav className="pointer-events-auto w-full max-w-3xl px-4">
-            <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white/95 px-3 py-2 shadow-lg shadow-slate-200/60">
+            <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/70 px-3 py-2 shadow-2xl shadow-black/40 backdrop-blur">
               {navItems.map((item) => {
                 const isActive =
                   item.key === 'stats'
@@ -965,11 +1000,11 @@ export default function Home() {
                     className={cn(
                       'flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-medium transition',
                       isActive
-                        ? 'bg-indigo-50 text-indigo-600'
-                        : 'text-slate-500 hover:text-slate-900'
+                        ? 'bg-indigo-500/15 text-indigo-100'
+                        : 'text-slate-400 hover:text-slate-100'
                     )}
                   >
-                    <span className="text-lg">{item.icon}</span>
+                    <Icon name={item.icon} className="h-5 w-5" />
                     <span>{item.label}</span>
                   </button>
                 );
@@ -987,10 +1022,10 @@ export default function Home() {
           headerContent={
             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
               <div>
-                <p className="text-base font-semibold text-slate-900">
+                <p className="text-base font-semibold text-slate-100">
                   {duplicatingHabit ? "Dupliquer l'habitude" : 'Créer une habitude'}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-400">
                   {duplicatingHabit
                     ? 'Adaptez les paramètres avant d’enregistrer la copie.'
                     : 'Définissez un nom, des tags et un planning clair.'}

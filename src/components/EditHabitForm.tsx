@@ -9,6 +9,7 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import { Icon } from './Icon';
 
 interface EditHabitFormProps {
   habit: Habit;
@@ -104,7 +105,7 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Nom de l'habitude */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+        <div className="flex items-center justify-between text-sm font-medium text-slate-200">
           <label htmlFor="name">Nom de l&apos;habitude *</label>
           <Badge variant="secondary">{name.length}/50</Badge>
         </div>
@@ -122,7 +123,7 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
 
       {/* Description optionnelle */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm font-medium text-slate-700">
+        <div className="flex items-center justify-between text-sm font-medium text-slate-200">
           <label htmlFor="description">Description (optionnelle)</label>
           <Badge variant="secondary">{description.length}/200</Badge>
         </div>
@@ -140,7 +141,7 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
 
       {/* Jours de la semaine */}
       <div>
-        <p className="text-sm font-medium text-slate-700 mb-3">Jours ciblés *</p>
+        <p className="mb-3 text-sm font-medium text-slate-200">Jours ciblés *</p>
         <div className="grid grid-cols-2 gap-2">
           {DAYS_OF_WEEK.map((day) => {
             const isSelected = targetDays.includes(day.value);
@@ -150,16 +151,16 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
                 key={day.value}
                 onClick={() => handleDayToggle(day.value)}
                 className={cn(
-                  'flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60',
+                  'flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
                   isSelected
-                    ? 'border-indigo-400 bg-gradient-to-br from-indigo-50 to-blue-50 text-indigo-700 shadow-sm shadow-indigo-100'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-slate-900'
+                    ? 'border-indigo-500/60 bg-gradient-to-br from-indigo-900/60 to-indigo-900/30 text-indigo-100 shadow-sm shadow-indigo-900/30'
+                    : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:border-indigo-500 hover:text-slate-50'
                 )}
               >
                 <span>{day.label}</span>
                 {isSelected && (
-                  <Badge variant="outline" className="border-indigo-200 bg-white/60 text-indigo-600 text-[11px]">
-                    ✔
+                  <Badge variant="outline" className="border-indigo-500/70 text-indigo-100 text-[11px]">
+                    <Icon name="check" className="h-3 w-3" strokeWidth={2.2} />
                   </Badge>
                 )}
               </button>
@@ -179,13 +180,13 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
       </div>
 
       {/* Notifications */}
-      <div className="space-y-4 border-t border-slate-200 pt-4">
+      <div className="space-y-4 border-t border-slate-800 pt-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <label htmlFor="notificationEnabled" className="text-sm font-medium text-slate-700">
+            <label htmlFor="notificationEnabled" className="text-sm font-medium text-slate-200">
               Activer les notifications
             </label>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="mt-1 text-xs text-slate-400">
               Recevez un rappel pour cette habitude
             </p>
           </div>
@@ -193,8 +194,8 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
             type="button"
             onClick={() => setNotificationEnabled(!notificationEnabled)}
             className={cn(
-              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2',
-              notificationEnabled ? 'bg-indigo-600' : 'bg-slate-300'
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-slate-950',
+              notificationEnabled ? 'bg-indigo-500' : 'bg-slate-700'
             )}
             role="switch"
             aria-checked={notificationEnabled}
@@ -210,7 +211,7 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
 
         {notificationEnabled && (
           <div className="space-y-2">
-            <label htmlFor="notificationTime" className="text-sm font-medium text-slate-700">
+            <label htmlFor="notificationTime" className="text-sm font-medium text-slate-200">
               Heure du rappel
             </label>
             <Input

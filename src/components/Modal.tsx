@@ -51,19 +51,19 @@ export default function Modal({
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden rounded-3xl border border-white/30 bg-white/95 shadow-2xl shadow-slate-900/20`}
+        className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/80 shadow-2xl shadow-black/50 backdrop-blur-xl`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/60 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
           {headerContent ? (
             headerContent
           ) : (
             <>
-              <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+              <h2 className="text-lg font-semibold text-slate-50">{title}</h2>
               {!hideCloseButton && (
                 <button
                   onClick={onClose}
-                  className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                  className="rounded-full p-2 text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
                   aria-label="Fermer"
                 >
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
