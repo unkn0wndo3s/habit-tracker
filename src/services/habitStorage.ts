@@ -14,6 +14,7 @@ type HabitCompletions = Record<string, HabitCompletionEntry[]>;
 
 export class HabitStorage {
   static saveHabits(habits: Habit[]): void {
+    if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
     } catch (error) {
@@ -22,6 +23,7 @@ export class HabitStorage {
   }
 
   static loadHabits(): Habit[] {
+    if (typeof window === 'undefined') return [];
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored) return [];
@@ -246,6 +248,7 @@ export class HabitStorage {
   }
 
   private static loadCompletions(): HabitCompletions {
+    if (typeof window === 'undefined') return {};
     try {
       const stored = localStorage.getItem(COMPLETIONS_KEY);
       if (!stored) {
@@ -286,6 +289,7 @@ export class HabitStorage {
   }
 
   private static saveCompletions(completions: HabitCompletions): void {
+    if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(COMPLETIONS_KEY, JSON.stringify(completions));
     } catch (error) {
@@ -294,6 +298,7 @@ export class HabitStorage {
   }
 
   static clearHabits(): void {
+    if (typeof window === 'undefined') return;
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(COMPLETIONS_KEY);
   }
