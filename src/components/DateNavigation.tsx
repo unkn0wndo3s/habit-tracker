@@ -30,7 +30,7 @@ export default function DateNavigation({ currentDate, onDateChange }: DateNaviga
             {formatDate(currentDate)}
           </button>
           {today && (
-            <Badge variant="success" className="mt-2 inline-flex border border-emerald-500/40 bg-emerald-500/15 text-emerald-100">
+            <Badge variant="success" className="mt-3 inline-flex border border-emerald-500/40 bg-emerald-500/15 text-emerald-100">
               Aujourd&apos;hui
             </Badge>
           )}
