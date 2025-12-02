@@ -188,6 +188,51 @@
 }
 
 @layer components {
+  /* Classe utilitaire pour l'animation du background orbital */
+  .orbital-background {
+    position: absolute;
+    inset: 0;
+    perspective: 1200px;
+    overflow: hidden;
+  }
+
+  .orbital-background__scene {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-style: preserve-3d;
+  }
+
+  .orbital-background__orbit {
+    position: absolute;
+    width: var(--orbit-size);
+    height: var(--orbit-size);
+    margin-left: calc(var(--orbit-size) / -2);
+    margin-top: calc(var(--orbit-size) / -2);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    animation: orbit-spin var(--orbit-duration) linear infinite;
+    transform-style: preserve-3d;
+  }
+
+  .orbital-background__orbit::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: radial-gradient(circle, var(--orbit-color) 0%, transparent 70%);
+    box-shadow:
+      0 0 12px var(--orbit-color),
+      0 0 40px var(--orbit-color);
+    transform-origin: center;
+    transform: translate(-50%, -50%) translateX(calc(var(--orbit-size) / 2));
+    animation: orbit-spin var(--orbit-duration) linear infinite reverse;
+  }
+
+  /* Classes de compatibilité (dépréciées, à supprimer après migration) */
   .orbital-scene {
     position: absolute;
     inset: 0;
@@ -202,34 +247,34 @@
     transform-style: preserve-3d;
   }
 
-.orbital-orbit {
-  position: absolute;
-  width: var(--orbit-size);
-  height: var(--orbit-size);
-  margin-left: calc(var(--orbit-size) / -2);
-  margin-top: calc(var(--orbit-size) / -2);
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  animation: orbit-spin var(--orbit-duration) linear infinite;
-  transform-style: preserve-3d;
-}
+  .orbital-orbit {
+    position: absolute;
+    width: var(--orbit-size);
+    height: var(--orbit-size);
+    margin-left: calc(var(--orbit-size) / -2);
+    margin-top: calc(var(--orbit-size) / -2);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    animation: orbit-spin var(--orbit-duration) linear infinite;
+    transform-style: preserve-3d;
+  }
 
-.orbital-orbit::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: radial-gradient(circle, var(--orbit-color) 0%, transparent 70%);
-  box-shadow:
-    0 0 12px var(--orbit-color),
-    0 0 40px var(--orbit-color);
-  transform-origin: center;
-  transform: translate(-50%, -50%) translateX(calc(var(--orbit-size) / 2));
-  animation: orbit-spin var(--orbit-duration) linear infinite reverse;
-}
+  .orbital-orbit::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    background: radial-gradient(circle, var(--orbit-color) 0%, transparent 70%);
+    box-shadow:
+      0 0 12px var(--orbit-color),
+      0 0 40px var(--orbit-color);
+    transform-origin: center;
+    transform: translate(-50%, -50%) translateX(calc(var(--orbit-size) / 2));
+    animation: orbit-spin var(--orbit-duration) linear infinite reverse;
+  }
 
   .card-neon {
     position: relative;

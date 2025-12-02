@@ -736,12 +736,12 @@ export default function Home() {
         <div className="absolute -left-20 top-10 h-72 w-72 rounded-full bg-violet-500/25 blur-[160px]" />
         <div className="absolute right-0 top-1/4 h-80 w-80 rounded-full bg-sky-500/20 blur-[140px]" />
         <div className="absolute bottom-10 left-1/3 h-72 w-72 rounded-full bg-emerald-400/10 blur-[150px]" />
-        <div className="orbital-scene">
-          <div className="orbital-anchor">
+        <div className="orbital-background">
+          <div className="orbital-background__scene">
             {orbitalLayers.map((layer, index) => (
               <div
                 key={`orbit-${index}`}
-                className="orbital-orbit"
+                className="orbital-background__orbit"
                 style={
                   {
                     '--orbit-size': `${layer.size}px`,
