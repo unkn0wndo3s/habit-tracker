@@ -11,9 +11,9 @@ export default function TagsSection({ tags, onTagClick }: TagsSectionProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-slate-800/60 bg-slate-900/50 p-4 shadow-inner shadow-black/30 backdrop-blur">
-      <h3 className="mb-3 text-sm font-semibold text-slate-100">Tous les tags</h3>
-      <div className="flex flex-wrap gap-2">
+    <div className="rounded-2xl border border-slate-800/60 bg-slate-900/50 p-3 shadow-inner shadow-black/30 backdrop-blur sm:p-4">
+      <h3 className="mb-3 text-xs font-semibold text-slate-100 sm:text-sm">Tous les tags</h3>
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
         {tags.map((tag) => (
           <button
             key={tag.name}

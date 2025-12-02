@@ -165,7 +165,7 @@ export default function CreateHabitForm({ onHabitCreated, onError, initialValues
       {/* Jours de la semaine */}
       <div>
         <p className="mb-3 text-sm font-medium text-slate-200">Jours ciblés *</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {DAYS_OF_WEEK.map((day) => {
             const isSelected = targetDays.includes(day.value);
             return (

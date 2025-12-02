@@ -755,8 +755,8 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col gap-5 px-4 pb-10">
-        <main className="flex-1 space-y-4 pt-2">
+      <div className="relative z-10 mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col gap-4 px-3 pb-10 md:gap-5 md:px-4">
+        <main className="flex-1 space-y-3 pt-2 md:space-y-4">
           {shouldDisplayInstallCTA && (
             <Card className="border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-900 shadow-xl shadow-indigo-900/40">
               <CardContent className="flex flex-col gap-3 p-5">
@@ -850,48 +850,48 @@ export default function Home() {
                 ];
 
               return (
-                <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30">
+                <Card className="w-full border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30">
                   <CardHeader>
                     <CardTitle>Gérer les habitudes</CardTitle>
                     <CardDescription>Filtrez, éditez et organisez vos rituels</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid gap-3 md:grid-cols-3">
+                  <CardContent className="w-full space-y-6">
+                    <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
                       {manageHighlights.map((stat) => (
                         <div
                           key={stat.key}
-                          className="rounded-2xl border border-white/5 bg-gradient-to-br from-white/5 via-transparent to-transparent px-4 py-4 shadow-inner shadow-black/30 backdrop-blur"
+                          className="rounded-2xl border border-white/5 bg-gradient-to-br from-white/5 via-transparent to-transparent px-3 py-3 shadow-inner shadow-black/30 backdrop-blur sm:px-4 sm:py-4"
                         >
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-2">
                             <div className="p-1.5 text-white">
                               <Icon name={stat.icon} className="h-3 w-3" />
                             </div>
-                             <span className="text-[10px] uppercase tracking-[0.35em] text-slate-500 text-right w-full md:w-32">
+                             <span className="text-[10px] uppercase tracking-[0.35em] text-slate-500 text-right flex-1 sm:w-32">
                               {stat.label}
                             </span>
                           </div>
-                          <p className="mt-4 text-3xl font-semibold text-slate-50">{formatStatValue(stat.value)}</p>
+                          <p className="mt-3 text-2xl font-semibold text-slate-50 sm:mt-4 sm:text-3xl">{formatStatValue(stat.value)}</p>
                           <p className="text-xs text-slate-400">{stat.caption}</p>
                         </div>
                       ))}
                     </div>
 
-                    <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/60 via-slate-900/50 to-slate-900/60 p-5 shadow-[0_25px_60px_-45px_rgba(99,102,241,0.8)]">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div>
+                    <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/60 via-slate-900/50 to-slate-900/60 p-4 shadow-[0_25px_60px_-45px_rgba(99,102,241,0.8)] sm:p-5">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                        <div className="flex-1">
                           <p className="text-sm font-semibold text-slate-100">Créer une habitude</p>
-                          <p className="text-xs text-slate-300">
+                          <p className="mt-1 text-xs text-slate-300">
                             Définissez un nom, des tags et un planning clair ou dupliquez une habitude existante.
                           </p>
                         </div>
                         <Button
-                          className="w-full border border-white/10 bg-white/10 text-slate-100 md:w-auto"
+                          className="w-full border border-white/10 bg-white/10 text-slate-100 sm:w-auto sm:shrink-0"
                           onClick={handleStartCreateHabit}
                         >
                           + Nouvelle habitude
                         </Button>
                       </div>
-                      <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-slate-200">
+                      <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-200 sm:mt-4">
                         <Badge variant="outline" className="border-white/20 text-slate-100">
                           {activeHabitsCount} actives
                         </Badge>
@@ -904,67 +904,67 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-                      <div className="rounded-2xl border border-slate-800/70 bg-slate-900/40 p-4 shadow-inner shadow-black/30">
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="flex-1 text-right text-sm font-semibold text-slate-200">Recherche & filtre rapide</p>
+                    <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-[2fr_1fr] lg:grid-cols-[1.7fr_1fr]">
+                      <div className="w-full min-w-0 rounded-2xl border border-slate-800/70 bg-slate-900/40 p-3 shadow-inner shadow-black/30 sm:p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                          <p className="text-sm font-semibold text-slate-200 sm:flex-1 sm:text-right">Recherche & filtre rapide</p>
                           {selectedTag && (
                             <button
                               type="button"
                               onClick={() => setSelectedTag(null)}
-                              className="text-xs text-slate-400 underline-offset-4 hover:text-slate-200"
+                              className="self-start text-xs text-slate-400 underline-offset-4 hover:text-slate-200 sm:self-auto"
                             >
                               Effacer le tag
                             </button>
                           )}
                         </div>
-                        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-slate-700/70 bg-slate-900/30 px-4 py-2.5">
-                          <Icon name="search" className="h-4 w-4 text-slate-500" />
+                        <div className="mt-3 flex items-center gap-2 rounded-2xl border border-slate-700/70 bg-slate-900/30 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
+                          <Icon name="search" className="h-4 w-4 shrink-0 text-slate-500" />
                           <Input
                             type="text"
                             placeholder="Rechercher une habitude..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-1 border-none bg-transparent px-0 text-slate-100 placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            className="flex-1 border-none bg-transparent px-0 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 sm:text-base"
                           />
                           {searchQuery && (
                             <button
                               type="button"
                               onClick={() => setSearchQuery('')}
-                              className="text-slate-500 transition-colors hover:text-slate-100"
+                              className="shrink-0 text-slate-500 transition-colors hover:text-slate-100"
                               aria-label="Effacer la recherche"
                             >
                               <Icon name="close" className="h-4 w-4" />
                             </button>
                           )}
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <button
                             type="button"
                             onClick={() => setShowOnlyDue((prev) => !prev)}
                             className={cn(
-                              'rounded-full border px-3 py-1 text-xs font-semibold transition',
+                              'rounded-full border px-2.5 py-1 text-[11px] font-semibold transition sm:px-3 sm:text-xs',
                               showOnlyDue
                                 ? 'border-rose-400/70 bg-rose-500/20 text-rose-100'
                                 : 'border-slate-600 text-slate-300 hover:text-slate-100'
                             )}
                           >
-                            {showOnlyDue ? 'Voir toutes les tâches' : 'Voir les tâches à faire aujourd’hui'}
+                            {showOnlyDue ? 'Voir toutes les tâches' : "Voir les tâches à faire aujourd'hui"}
                           </button>
                           {selectedTag && (
-                            <span className="rounded-full border border-slate-600 px-3 py-1 text-xs text-slate-300">
+                            <span className="rounded-full border border-slate-600 px-2.5 py-1 text-[11px] text-slate-300 sm:px-3 sm:text-xs">
                               Tag #{selectedTag}
                             </span>
                           )}
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
                           {(['created', 'alphabetical', 'recentlyCompleted'] as const).map((mode) => (
                             <button
                               key={mode}
                               type="button"
                               onClick={() => setSortMode(mode)}
                               className={cn(
-                                'rounded-full border px-3 py-1 text-xs font-semibold transition',
+                                'rounded-full border px-2.5 py-1 text-[11px] font-semibold transition sm:px-3 sm:text-xs',
                                 sortMode === mode
                                   ? 'border-indigo-400/70 bg-indigo-500/20 text-indigo-100'
                                   : 'border-slate-600 text-slate-300 hover:text-slate-100'
@@ -978,7 +978,7 @@ export default function Home() {
                             </button>
                           ))}
                         </div>
-                        <p className="mt-2 text-xs text-slate-500 text-right">
+                        <p className="mt-2 text-xs text-slate-500 sm:text-right">
                           {selectedTag ? `Tag filtré : #${selectedTag}` : 'Combinez recherche, filtres et tri pour affiner la liste.'}
                         </p>
                       </div>
@@ -1013,12 +1013,12 @@ export default function Home() {
                         {visibleHabits.map((habit) => (
                           <div
                             key={habit.id}
-                            className="rounded-2xl border border-slate-700 bg-slate-900/50 p-4 shadow-[0_25px_50px_-45px_rgba(0,0,0,0.9)] transition hover:border-slate-500/60"
+                            className="rounded-2xl border border-slate-700 bg-slate-900/50 p-3 shadow-[0_25px_50px_-45px_rgba(0,0,0,0.9)] transition hover:border-slate-500/60 sm:p-4"
                           >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <h3 className="text-base font-semibold text-slate-100">{habit.name}</h3>
+                            <div className="flex items-start justify-between gap-2 sm:gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                  <h3 className="text-sm font-semibold text-slate-100 break-words sm:text-base">{habit.name}</h3>
                                   <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
                                 </div>
                                 {habit.description && (
@@ -1049,42 +1049,42 @@ export default function Home() {
                                   </div>
                                 )}
                               </div>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-0.5 shrink-0 sm:gap-1">
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleEditHabit(habit)}
-                                  className="text-slate-400 hover:text-indigo-300"
+                                  className="h-8 w-8 text-slate-400 hover:text-indigo-300 sm:h-10 sm:w-10"
                                   aria-label="Modifier l'habitude"
                                 >
-                                  <Icon name="pencil" className="h-4 w-4" />
+                                  <Icon name="pencil" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleDuplicateHabit(habit)}
-                                  className="text-slate-400 hover:text-blue-300"
+                                  className="h-8 w-8 text-slate-400 hover:text-blue-300 sm:h-10 sm:w-10"
                                   aria-label="Dupliquer l'habitude"
                                 >
-                                  <Icon name="copy" className="h-4 w-4" />
+                                  <Icon name="copy" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleArchiveHabit(habit)}
-                                  className="text-slate-400 hover:text-amber-300"
+                                  className="h-8 w-8 text-slate-400 hover:text-amber-300 sm:h-10 sm:w-10"
                                   aria-label="Archiver l'habitude"
                                 >
-                                  <Icon name="archive" className="h-4 w-4" />
+                                  <Icon name="archive" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => handleDeleteHabit(habit)}
-                                  className="text-slate-500 hover:text-rose-300"
+                                  className="h-8 w-8 text-slate-500 hover:text-rose-300 sm:h-10 sm:w-10"
                                   aria-label="Supprimer l'habitude"
                                 >
-                                  <Icon name="trash" className="h-4 w-4" />
+                                  <Icon name="trash" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
                               </div>
                             </div>
@@ -1205,9 +1205,9 @@ export default function Home() {
             })()}
         </main>
 
-        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-4">
-          <nav className="pointer-events-auto w-full max-w-3xl px-4">
-            <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/70 px-3 py-2 shadow-2xl shadow-black/40 backdrop-blur">
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-2 sm:pb-4">
+          <nav className="pointer-events-auto w-full max-w-3xl px-2 sm:px-4">
+            <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950/70 px-2 py-1.5 shadow-2xl shadow-black/40 backdrop-blur sm:px-3 sm:py-2">
               {navItems.map((item) => {
                 const isActive =
                   item.key === 'stats'
@@ -1219,14 +1219,14 @@ export default function Home() {
                     type="button"
                     onClick={item.action}
                     className={cn(
-                      'flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-medium transition',
+                      'flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[10px] font-medium transition sm:gap-1 sm:px-3 sm:py-1.5 sm:text-xs',
                       isActive
                         ? 'bg-indigo-500/15 text-indigo-100'
                         : 'text-slate-400 hover:text-slate-100'
                     )}
                   >
-                    <Icon name={item.icon} className="h-5 w-5" />
-                    <span>{item.label}</span>
+                    <Icon name={item.icon} className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="hidden sm:inline">{item.label}</span>
                   </button>
                 );
               })}

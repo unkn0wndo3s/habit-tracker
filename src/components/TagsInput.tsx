@@ -82,11 +82,11 @@ export default function TagsInput({ tags, onChange, availableTags = [] }: TagsIn
       </div>
 
       {tags.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-1.5 sm:gap-2">
           {tags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center gap-1 rounded-full border border-indigo-500/40 bg-indigo-500/15 px-3 py-1 text-xs font-medium text-indigo-100 shadow-[0_0_20px_rgba(99,102,241,0.25)]"
+              className="inline-flex items-center gap-1 rounded-full border border-indigo-500/40 bg-indigo-500/15 px-2.5 py-0.5 text-[11px] font-medium text-indigo-100 shadow-[0_0_20px_rgba(99,102,241,0.25)] sm:px-3 sm:py-1 sm:text-xs"
             >
               <span>#{tag}</span>
               <button
@@ -95,7 +95,7 @@ export default function TagsInput({ tags, onChange, availableTags = [] }: TagsIn
                 className="text-indigo-200 transition hover:text-white focus:outline-none"
                 aria-label={`Supprimer le tag ${tag}`}
               >
-                <Icon name="close" className="h-3.5 w-3.5" />
+                <Icon name="close" className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               </button>
             </span>
           ))}
@@ -103,13 +103,14 @@ export default function TagsInput({ tags, onChange, availableTags = [] }: TagsIn
       )}
 
       {/* Champ de saisie */}
-      <div className="flex gap-2">
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <Input
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleInputKeyDown}
           onFocus={() => setShowSuggestions(inputValue.length > 0 && filteredSuggestions.length > 0)}
           placeholder="Ajouter un tag (Entrée ou bouton)"
+          className="flex-1"
         />
         <Button
           type="button"
@@ -117,7 +118,7 @@ export default function TagsInput({ tags, onChange, availableTags = [] }: TagsIn
           disabled={!canAddTag}
           variant="secondary"
           size="sm"
-          className="whitespace-nowrap border border-indigo-500/30 bg-indigo-500/20 px-5 text-slate-100 hover:bg-indigo-500/40"
+          className="w-full whitespace-nowrap border border-indigo-500/30 bg-indigo-500/20 px-4 text-slate-100 hover:bg-indigo-500/40 sm:w-auto sm:px-5"
         >
           Ajouter
         </Button>

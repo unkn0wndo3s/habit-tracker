@@ -73,9 +73,9 @@ export default function SettingsView({ onError, onSuccess }: SettingsViewProps) 
         <CardTitle>Paramètres</CardTitle>
         <CardDescription>Gérez vos préférences et notifications</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+      <CardContent className="space-y-4 sm:space-y-6">
+        <div className="space-y-3 sm:space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-slate-100">Notifications</h3>
               <p className="mt-1 text-xs text-slate-400">
@@ -91,7 +91,7 @@ export default function SettingsView({ onError, onSuccess }: SettingsViewProps) 
               variant={notificationsEnabled ? 'default' : 'outline'}
               onClick={handleToggleNotifications}
               disabled={isRequestingPermission}
-              className="ml-4"
+              className="w-full sm:ml-4 sm:w-auto sm:shrink-0"
             >
               {isRequestingPermission ? 'Chargement...' : notificationsEnabled ? 'Activées' : 'Désactivées'}
             </Button>
@@ -99,8 +99,8 @@ export default function SettingsView({ onError, onSuccess }: SettingsViewProps) 
         </div>
 
         <div className="border-t border-slate-800/80 pt-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 pr-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex-1 sm:pr-4">
               <h3 className="text-sm font-semibold text-slate-100">Notification de test</h3>
               <p className="mt-1 text-xs text-slate-400">
                 Programme une notification dans 10 secondes pour vérifier que tout fonctionne.
@@ -112,6 +112,7 @@ export default function SettingsView({ onError, onSuccess }: SettingsViewProps) 
               disabled={
                 isTestingNotification || notificationPermission === 'denied' || isRequestingPermission || !notificationsEnabled
               }
+              className="w-full sm:w-auto sm:shrink-0"
             >
               {isTestingNotification ? 'Programmation...' : 'Tester'}
             </Button>

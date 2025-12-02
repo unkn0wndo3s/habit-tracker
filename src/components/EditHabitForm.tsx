@@ -142,7 +142,7 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
       {/* Jours de la semaine */}
       <div>
         <p className="mb-3 text-sm font-medium text-slate-200">Jours ciblés *</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {DAYS_OF_WEEK.map((day) => {
             const isSelected = targetDays.includes(day.value);
             return (
@@ -151,7 +151,7 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
                 key={day.value}
                 onClick={() => handleDayToggle(day.value)}
                 className={cn(
-                  'flex items-center justify-between rounded-2xl border px-4 py-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+                  'flex items-center justify-between rounded-2xl border px-3 py-2 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:px-4 sm:py-3 sm:text-sm',
                   isSelected
                     ? 'border-indigo-500/60 bg-gradient-to-br from-indigo-900/60 to-indigo-900/30 text-indigo-100 shadow-sm shadow-indigo-900/30'
                     : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:border-indigo-500 hover:text-slate-50'
@@ -226,7 +226,7 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
       </div>
 
       {/* Boutons d'action */}
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
         <Button
           type="button"
           variant="outline"

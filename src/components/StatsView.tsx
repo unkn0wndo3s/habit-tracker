@@ -123,11 +123,11 @@ export default function StatsView({ habits }: StatsViewProps) {
   }, [habitsFingerprint]);
 
   return (
-    <div className="space-y-5 p-4 md:p-6">
+    <div className="space-y-4 p-3 sm:space-y-5 sm:p-4 md:p-6">
       <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Statistiques</p>
-        <h1 className="mt-1 text-2xl font-semibold text-slate-100">Visualisez votre constance</h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400 sm:text-xs">Statistiques</p>
+        <h1 className="mt-1 text-xl font-semibold text-slate-100 sm:text-2xl">Visualisez votre constance</h1>
+        <p className="mt-1 text-xs text-slate-400 sm:text-sm">
           Comparez vos habitudes sur différentes périodes pour repérer vos temps forts et les axes
           de progression.
         </p>
@@ -140,19 +140,19 @@ export default function StatsView({ habits }: StatsViewProps) {
             {monthlyStats.monthLabel.charAt(0).toUpperCase() + monthlyStats.monthLabel.slice(1)}
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm text-slate-400">Taux de complétion</p>
-            <p className="text-4xl font-semibold text-indigo-200">{monthlyStats.rate}%</p>
+            <p className="text-xs text-slate-400 sm:text-sm">Taux de complétion</p>
+            <p className="text-3xl font-semibold text-indigo-200 sm:text-4xl">{monthlyStats.rate}%</p>
           </div>
           <div className="flex gap-4 text-sm text-slate-300">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Planifiées</p>
-              <p className="text-lg font-semibold text-slate-100">{monthlyStats.scheduled}</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 sm:text-xs">Planifiées</p>
+              <p className="text-base font-semibold text-slate-100 sm:text-lg">{monthlyStats.scheduled}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Réalisées</p>
-              <p className="text-lg font-semibold text-slate-100">{monthlyStats.completed}</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 sm:text-xs">Réalisées</p>
+              <p className="text-base font-semibold text-slate-100 sm:text-lg">{monthlyStats.completed}</p>
             </div>
           </div>
         </CardContent>
@@ -169,7 +169,7 @@ export default function StatsView({ habits }: StatsViewProps) {
           {heatmapData.length === 0 ? (
             <p className="text-sm text-slate-400">Aucune donnée disponible.</p>
           ) : (
-            <div className="grid grid-cols-[repeat(10,minmax(20px,1fr))] gap-1">
+            <div className="grid grid-cols-[repeat(10,minmax(16px,1fr))] gap-0.5 sm:grid-cols-[repeat(10,minmax(20px,1fr))] sm:gap-1">
               {heatmapData.map((point) => {
                 const rate =
                   point.scheduledCount === 0
@@ -179,7 +179,7 @@ export default function StatsView({ habits }: StatsViewProps) {
                   <div
                     key={point.dateKey}
                     className={cn(
-                      'h-8 rounded-md border text-[10px] font-semibold transition',
+                      'h-6 rounded-md border text-[9px] font-semibold transition sm:h-8 sm:text-[10px]',
                       getHeatmapColor(rate)
                     )}
                     title={`${formatLongDate(point.date)} · ${point.completedCount}/${
@@ -209,15 +209,15 @@ export default function StatsView({ habits }: StatsViewProps) {
             habitStats.map(({ habit, rate, completed, scheduled }) => (
               <div
                 key={habit.id}
-                className="flex flex-col gap-2 rounded-2xl border border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-300 md:flex-row md:items-center md:justify-between"
+                className="flex flex-col gap-2 rounded-2xl border border-slate-700 bg-slate-900/40 p-3 text-sm text-slate-300 sm:flex-row sm:items-center sm:justify-between sm:p-4"
               >
-                <div>
-                  <p className="text-base font-semibold text-slate-100">{habit.name}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-100 break-words sm:text-base">{habit.name}</p>
                   {habit.description && (
-                    <p className="text-xs text-slate-400">{habit.description}</p>
+                    <p className="mt-1 text-xs text-slate-400">{habit.description}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4 sm:shrink-0">
                   <Badge variant="secondary" className="text-xs font-semibold text-slate-200">
                     {completed}/{scheduled} réalisées
                   </Badge>
@@ -248,14 +248,14 @@ export default function StatsView({ habits }: StatsViewProps) {
           <CardDescription>Sélectionnez une période pour voir l'évolution de vos habitudes</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {timeframes.map((timeframe) => (
               <button
                 key={timeframe.key}
                 type="button"
                 onClick={() => setSelectedTimeframe(timeframe.key)}
                 className={cn(
-                  'rounded-xl border px-4 py-2 text-sm font-medium transition-all',
+                  'rounded-xl border px-3 py-1.5 text-xs font-medium transition-all sm:px-4 sm:py-2 sm:text-sm',
                   selectedTimeframe === timeframe.key
                     ? 'border-indigo-500/60 bg-indigo-500/10 text-indigo-100 shadow-[0_10px_30px_rgba(99,102,241,0.2)]'
                     : 'border-slate-700 bg-slate-900/40 text-slate-300 hover:border-indigo-500/40 hover:text-slate-100'
@@ -298,53 +298,53 @@ export default function StatsView({ habits }: StatsViewProps) {
             <CardContent className="space-y-4">
               {hasData ? (
                 <>
-                  <div className="flex items-end gap-2 overflow-x-auto">
+                  <div className="flex items-end gap-1 overflow-x-auto pb-2 sm:gap-2 sm:pb-0">
                     {chartData.map((bucket) => (
-                      <div key={bucket.label} className="flex min-w-[28px] flex-1 flex-col gap-2">
-                        <div className="flex h-32 items-end rounded-full bg-slate-800/50 p-1">
+                      <div key={bucket.label} className="flex min-w-[24px] flex-1 flex-col gap-1.5 sm:min-w-[28px] sm:gap-2">
+                        <div className="flex h-24 items-end rounded-full bg-slate-800/50 p-0.5 sm:h-32 sm:p-1">
                           <div
                             className="w-full rounded-full bg-gradient-to-t from-indigo-900 via-indigo-500 to-indigo-400 transition-all"
                             style={{ height: `${bucket.rate}%` }}
                             aria-label={`Taux de ${bucket.rate}%`}
                           />
                         </div>
-                        <p className="text-center text-[11px] font-medium text-slate-400">
+                        <p className="text-center text-[10px] font-medium text-slate-400 sm:text-[11px]">
                           {bucket.label}
                         </p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="grid gap-4 rounded-2xl border border-slate-700 bg-slate-900/40 p-4 text-sm text-slate-300 md:grid-cols-3">
+                  <div className="grid gap-3 rounded-2xl border border-slate-700 bg-slate-900/40 p-3 text-sm text-slate-300 sm:gap-4 sm:p-4 md:grid-cols-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
                         Habitudes réalisées
                       </p>
-                      <p className="mt-1 text-2xl font-semibold text-slate-100">
+                      <p className="mt-1 text-xl font-semibold text-slate-100 sm:text-2xl">
                         {summary.totalCompleted}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
                         {timeframe.groupByMonth ? 'Mois suivis' : 'Jours suivis'}
                       </p>
-                      <p className="mt-1 text-2xl font-semibold text-slate-100">
+                      <p className="mt-1 text-xl font-semibold text-slate-100 sm:text-2xl">
                         {summary.daysWithSchedule}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 sm:text-xs">
                         {timeframe.groupByMonth ? 'Meilleur mois' : 'Top jour'}
                       </p>
                       {summary.bestDay ? (
-                        <p className="mt-1 text-base font-semibold text-slate-100">
+                        <p className="mt-1 text-sm font-semibold text-slate-100 sm:text-base">
                           {summary.bestDay.label}{' '}
-                          <span className="text-sm font-normal text-slate-400">
+                          <span className="text-xs font-normal text-slate-400 sm:text-sm">
                             ({summary.bestDay.rate}%)
                           </span>
                         </p>
                       ) : (
-                        <p className="mt-1 text-base font-semibold text-slate-100">
+                        <p className="mt-1 text-sm font-semibold text-slate-100 sm:text-base">
                           Pas encore de données
                         </p>
                       )}
