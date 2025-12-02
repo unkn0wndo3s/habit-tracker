@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Habit, DailyHabit } from '@/types/habit';
 import { HabitStorage } from '@/services/habitStorage';
 import CreateHabitForm from '@/components/CreateHabitForm';
@@ -48,10 +48,13 @@ export default function Home() {
   const [isAppInstalled, setIsAppInstalled] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showOnlyDue, setShowOnlyDue] = useState(false);
+  const [sortMode, setSortMode] = useState<'created' | 'alphabetical' | 'recentlyCompleted'>('created');
   const { toasts, showSuccess, showError, removeToast } = useToast();
   const { undoState, registerUndo, undo, clearUndo, canUndo } = useUndo<Habit>();
   const [undoRemainingTime, setUndoRemainingTime] = useState(0);
   const installPromptEvent = useRef<BeforeInstallPromptEvent | null>(null);
+  const pointerFrame = useRef<number | null>(null);
 
   const loadHabits = useCallback(() => {
     setAllHabits(HabitStorage.loadHabits());
@@ -72,6 +75,16 @@ export default function Home() {
   }, [allHabits]);
 
   // Filtrer les habitudes par tag sélectionné et recherche (exclure les archivées)
+  const dueHabitIds = useMemo(() => {
+    void allHabits;
+    const todaysHabits = HabitStorage.getHabitsForDate(currentDate);
+    return new Set(
+      todaysHabits
+        .filter(habit => !habit.isCompleted && !habit.isFuture)
+        .map(habit => habit.id)
+    );
+  }, [currentDate, allHabits]);
+
   const filteredHabits = useCallback(() => {
     let filtered = allHabits.filter(habit => !habit.archived);
 
@@ -90,13 +103,37 @@ export default function Home() {
       });
     }
 
+    // Ne garder que celles dues aujourd'hui si demandé
+    if (showOnlyDue) {
+      filtered = filtered.filter(habit => dueHabitIds.has(habit.id));
+    }
+
+    filtered = filtered.sort((a, b) => {
+      if (sortMode === 'alphabetical') {
+        return a.name.localeCompare(b.name, 'fr-FR');
+      }
+      if (sortMode === 'recentlyCompleted') {
+        const lastCompletedA = HabitStorage.getHabitStreak(a.id);
+        const lastCompletedB = HabitStorage.getHabitStreak(b.id);
+        return lastCompletedB - lastCompletedA;
+      }
+      return a.createdAt.getTime() - b.createdAt.getTime();
+    });
+
     return filtered;
-  }, [allHabits, selectedTag, searchQuery]);
+  }, [allHabits, selectedTag, searchQuery, showOnlyDue, sortMode, dueHabitIds]);
 
   // Récupérer les habitudes archivées
   const archivedHabits = useCallback(() => {
     return allHabits.filter(habit => habit.archived === true);
   }, [allHabits]);
+
+  const availableTags = tagsWithCount();
+
+  const activeHabitsCount = useMemo(() => allHabits.filter(habit => !habit.archived).length, [allHabits]);
+  const archivedCount = allHabits.length - activeHabitsCount;
+
+  const dueTodayCount = useMemo(() => dueHabitIds.size, [dueHabitIds]);
 
   const loadDailyHabits = useCallback(() => {
     const habits = HabitStorage.getHabitsForDate(currentDate);
@@ -159,6 +196,11 @@ export default function Home() {
   }, [showSuccess]);
 
   useEffect(() => {
+    // Désactiver le service worker en mode développement
+    if (process.env.NODE_ENV === 'development') {
+      return;
+    }
+    
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
       return;
     }
@@ -520,6 +562,38 @@ export default function Home() {
     }
   };
 
+  const schedulePointerUpdate = useCallback((x: number, y: number) => {
+    if (pointerFrame.current) {
+      cancelAnimationFrame(pointerFrame.current);
+    }
+    pointerFrame.current = requestAnimationFrame(() => {
+      const percentX = Math.min(Math.max((x / window.innerWidth) * 100, 0), 100);
+      const percentY = Math.min(Math.max((y / window.innerHeight) * 100, 0), 100);
+      document.documentElement.style.setProperty('--pointer-x', `${percentX}%`);
+      document.documentElement.style.setProperty('--pointer-y', `${percentY}%`);
+    });
+  }, []);
+
+  const handlePointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    schedulePointerUpdate(event.clientX, event.clientY);
+  }, [schedulePointerUpdate]);
+
+  const handleTouchMove = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) {
+      return;
+    }
+    schedulePointerUpdate(touch.clientX, touch.clientY);
+  }, [schedulePointerUpdate]);
+
+  useEffect(() => {
+    return () => {
+      if (pointerFrame.current) {
+        cancelAnimationFrame(pointerFrame.current);
+      }
+    };
+  }, []);
+
   const confirmDeleteHabit = () => {
     if (!habitToDelete) return;
     
@@ -645,15 +719,19 @@ export default function Home() {
   ];
 
   const orbitalLayers = [
-    { size: 260, duration: '26s', color: 'rgba(129, 140, 248, 0.55)' },
-    { size: 360, duration: '32s', color: 'rgba(56, 189, 248, 0.45)' },
-    { size: 460, duration: '38s', color: 'rgba(16, 185, 129, 0.4)' }
+    { size: 520, duration: '40s', color: 'rgba(129, 140, 248, 0.5)' },
+    { size: 940, duration: '58s', color: 'rgba(56, 189, 248, 0.4)' },
+    { size: 1380, duration: '78s', color: 'rgba(16, 185, 129, 0.3)' }
   ];
 
   const shouldDisplayInstallCTA = canInstallPWA && !isAppInstalled;
 
   return (
-    <div className="relative min-h-screen overflow-hidden pb-28 pt-6">
+    <div
+      className="relative min-h-screen overflow-hidden pb-28 pt-6"
+      onPointerMove={handlePointerMove}
+      onTouchMove={handleTouchMove}
+    >
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -left-20 top-10 h-72 w-72 rounded-full bg-violet-500/25 blur-[160px]" />
         <div className="absolute right-0 top-1/4 h-80 w-80 rounded-full bg-sky-500/20 blur-[140px]" />
@@ -741,247 +819,390 @@ export default function Home() {
             />
           )}
 
-          {viewMode === 'manage' && (
-            <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30">
-              <CardHeader>
-                <CardTitle>Gérer les habitudes</CardTitle>
-                <CardDescription>Filtrez, éditez et organisez vos rituels</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="rounded-2xl border border-slate-700 bg-slate-900/40 p-4 shadow-inner shadow-black/30">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-100">Créer une habitude</p>
-                      <p className="text-xs text-slate-400">
-                        Définissez un nom, des tags et un planning clair ou dupliquez une habitude existante.
-                      </p>
-                    </div>
-                    <Button className="w-full border border-indigo-500/40 bg-indigo-500/20 text-slate-100 md:w-auto" onClick={handleStartCreateHabit}>
-                      + Créer une habitude
-                    </Button>
-                  </div>
-                </div>
+          {viewMode === 'manage' &&
+            (() => {
+              const visibleHabits = filteredHabits();
+              const archivedList = archivedHabits();
+              const formatStatValue = (value: number) => (value > 99 ? '99+' : value);
+              const manageHighlights: Array<{ key: string; label: string; value: number; caption: string; icon: IconName }> =
+                [
+                  {
+                    key: 'active',
+                    label: 'Habitudes actives',
+                    value: activeHabitsCount,
+                    caption: 'Actuellement suivies',
+                    icon: 'sparkles'
+                  },
+                  {
+                    key: 'due',
+                    label: 'À faire aujourd’hui',
+                    value: dueTodayCount,
+                    caption: 'Encore à cocher',
+                    icon: 'bell'
+                  },
+                  {
+                    key: 'tags',
+                    label: 'Tags actifs',
+                    value: availableTags.length,
+                    caption: 'Catégories disponibles',
+                    icon: 'note'
+                  }
+                ];
 
-                {/* Champ de recherche */}
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder="Rechercher une habitude..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pr-10"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-100"
-                      aria-label="Effacer la recherche"
-                    >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
-              </div>
-
-                {tagsWithCount().length > 0 && (
-                  <TagsFilter selectedTag={selectedTag} onTagSelect={setSelectedTag} tags={tagsWithCount()} />
-                )}
-
-                {filteredHabits().length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-center shadow-inner shadow-black/30">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70">
-                      <Icon name="note" className="h-8 w-8 text-indigo-200" strokeWidth={1.4} />
-                    </div>
-                    <h3 className="text-lg font-semibold text-slate-100">
-                      {searchQuery.trim() 
-                        ? 'Aucune habitude trouvée' 
-                        : selectedTag 
-                        ? `Aucune habitude avec le tag "${selectedTag}"` 
-                        : 'Aucune habitude créée'}
-                  </h3>
-                    <p className="mt-2 text-sm text-slate-400">
-                      {searchQuery.trim() 
-                        ? 'Essayez une autre recherche ou effacez le champ pour voir toutes les habitudes' 
-                        : selectedTag 
-                        ? 'Essayez un autre tag ou créez une nouvelle habitude' 
-                        : 'Commencez par définir votre première habitude'}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                    {filteredHabits().map((habit) => (
-                      <div
-                        key={habit.id}
-                        className="rounded-2xl border border-slate-700 bg-slate-900/40 p-4 shadow-inner shadow-black/30"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h3 className="text-base font-semibold text-slate-100">{habit.name}</h3>
-                              <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
-                            </div>
-                          {habit.description && (
-                              <p className="mt-1 text-sm text-slate-400">{habit.description}</p>
-                          )}
-                            <div className="mt-3 flex flex-wrap gap-1.5">
-                            {habit.targetDays.map((day) => (
-                                <Badge key={day} variant="outline" className="border-indigo-500/40 bg-indigo-500/10 text-xs text-indigo-100">
-                                {day.charAt(0).toUpperCase() + day.slice(1)}
-                                </Badge>
-                              ))}
-                            </div>
-                            {habit.tags && habit.tags.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-1.5">
-                                {habit.tags.map((tag) => (
-                                  <Badge key={tag} variant="secondary" className="text-xs border border-slate-700 bg-slate-900/20 text-slate-200">
-                                    #{tag}
-                                  </Badge>
-                            ))}
-                          </div>
-                            )}
-                        </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleEditHabit(habit)}
-                              className="text-slate-400 hover:text-indigo-300"
-                              aria-label="Modifier l'habitude"
-                            >
-                              <Icon name="pencil" className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDuplicateHabit(habit)}
-                              className="text-slate-400 hover:text-blue-300"
-                              aria-label="Dupliquer l'habitude"
-                            >
-                              <Icon name="copy" className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleArchiveHabit(habit)}
-                              className="text-slate-400 hover:text-amber-300"
-                              aria-label="Archiver l'habitude"
-                            >
-                              <Icon name="archive" className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteHabit(habit)}
-                              className="text-slate-500 hover:text-rose-300"
-                              aria-label="Supprimer l'habitude"
-                            >
-                              <Icon name="trash" className="h-4 w-4" />
-                            </Button>
-                        </div>
-                      </div>
-              </div>
-            ))}
-          </div>
-              )}
-
-                <div className="border-t border-slate-800/70 pt-4">
-                  <p className="mb-3 text-sm font-medium text-slate-100">Sauvegarde et transfert</p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1 border border-slate-700 bg-slate-900/40 text-slate-100"
-                      onClick={handleExportData}
-                    >
-                      <Icon name="export" className="mr-2 h-4 w-4" />
-                      Exporter
-                    </Button>
-                    <label className="flex-1 cursor-pointer">
-                      <input
-                        type="file"
-                        accept=".json"
-                        onChange={handleImportFile}
-                        className="hidden"
-                        id="import-file-input"
-                      />
-                      <Button
-                        variant="outline"
-                        className="w-full border border-slate-700 bg-slate-900/40 text-slate-100"
-                        type="button"
-                        onClick={() => document.getElementById('import-file-input')?.click()}
-                      >
-                        <Icon name="import" className="mr-2 h-4 w-4" />
-                        Importer
-                      </Button>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Section des habitudes archivées */}
-                {archivedHabits().length > 0 && (
-                  <div className="mt-8 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-slate-200">Archivées</h3>
-                      <Badge variant="secondary" className="text-xs border border-slate-700 bg-slate-900/40 text-slate-100">
-                        {archivedHabits().length}
-                      </Badge>
-                    </div>
-                    <div className="space-y-3">
-                      {archivedHabits().map((habit) => (
+              return (
+                <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30">
+                  <CardHeader>
+                    <CardTitle>Gérer les habitudes</CardTitle>
+                    <CardDescription>Filtrez, éditez et organisez vos rituels</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid gap-3 md:grid-cols-3">
+                      {manageHighlights.map((stat) => (
                         <div
-                          key={habit.id}
-                          className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-100 shadow-inner shadow-black/30"
+                          key={stat.key}
+                          className="rounded-2xl border border-white/5 bg-gradient-to-br from-white/5 via-transparent to-transparent px-4 py-4 shadow-inner shadow-black/30 backdrop-blur"
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-base font-semibold text-amber-100 line-through">{habit.name}</h3>
-                                <Badge variant="outline" className="border-amber-400/70 bg-amber-500/15 text-xs text-amber-100">
-                                  Archivée
-                                </Badge>
-                                <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
-                              </div>
-                              {habit.description && (
-                                <p className="mt-1 text-sm text-amber-50/80">{habit.description}</p>
-                              )}
-                              <div className="mt-3 flex flex-wrap gap-1.5">
-                                {habit.targetDays.map((day) => (
-                                  <Badge key={day} variant="outline" className="border-amber-400/60 bg-amber-500/10 text-xs text-amber-100">
-                                    {day.charAt(0).toUpperCase() + day.slice(1)}
-                                  </Badge>
-                                ))}
-                              </div>
-                              {habit.tags && habit.tags.length > 0 && (
-                                <div className="mt-2 flex flex-wrap gap-1.5">
-                                  {habit.tags.map((tag) => (
-                                    <Badge key={tag} variant="secondary" className="text-xs border border-amber-400/40 bg-amber-500/10 text-amber-50">
-                                      #{tag}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
+                          <div className="flex items-center justify-between">
+                            <div className="p-1.5 text-white">
+                              <Icon name={stat.icon} className="h-3 w-3" />
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleUnarchiveHabit(habit)}
-                                className="text-amber-100 hover:bg-amber-400/20"
-                                aria-label="Réactiver l'habitude"
-                              >
-                                Réactiver
-                              </Button>
-                            </div>
+                             <span className="text-[10px] uppercase tracking-[0.35em] text-slate-500 text-right w-full md:w-32">
+                              {stat.label}
+                            </span>
                           </div>
+                          <p className="mt-4 text-3xl font-semibold text-slate-50">{formatStatValue(stat.value)}</p>
+                          <p className="text-xs text-slate-400">{stat.caption}</p>
                         </div>
                       ))}
                     </div>
-            </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+
+                    <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/60 via-slate-900/50 to-slate-900/60 p-5 shadow-[0_25px_60px_-45px_rgba(99,102,241,0.8)]">
+                      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-100">Créer une habitude</p>
+                          <p className="text-xs text-slate-300">
+                            Définissez un nom, des tags et un planning clair ou dupliquez une habitude existante.
+                          </p>
+                        </div>
+                        <Button
+                          className="w-full border border-white/10 bg-white/10 text-slate-100 md:w-auto"
+                          onClick={handleStartCreateHabit}
+                        >
+                          + Nouvelle habitude
+                        </Button>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-slate-200">
+                        <Badge variant="outline" className="border-white/20 text-slate-100">
+                          {activeHabitsCount} actives
+                        </Badge>
+                        <Badge variant="outline" className="border-white/20 text-slate-100">
+                          {archivedCount} archivées
+                        </Badge>
+                        <Badge variant="outline" className="border-white/20 text-slate-100">
+                          {availableTags.length} tags
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+                      <div className="rounded-2xl border border-slate-800/70 bg-slate-900/40 p-4 shadow-inner shadow-black/30">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="flex-1 text-right text-sm font-semibold text-slate-200">Recherche & filtre rapide</p>
+                          {selectedTag && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedTag(null)}
+                              className="text-xs text-slate-400 underline-offset-4 hover:text-slate-200"
+                            >
+                              Effacer le tag
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-slate-700/70 bg-slate-900/30 px-4 py-2.5">
+                          <Icon name="search" className="h-4 w-4 text-slate-500" />
+                          <Input
+                            type="text"
+                            placeholder="Rechercher une habitude..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="flex-1 border-none bg-transparent px-0 text-slate-100 placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                          />
+                          {searchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setSearchQuery('')}
+                              className="text-slate-500 transition-colors hover:text-slate-100"
+                              aria-label="Effacer la recherche"
+                            >
+                              <Icon name="close" className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowOnlyDue((prev) => !prev)}
+                            className={cn(
+                              'rounded-full border px-3 py-1 text-xs font-semibold transition',
+                              showOnlyDue
+                                ? 'border-rose-400/70 bg-rose-500/20 text-rose-100'
+                                : 'border-slate-600 text-slate-300 hover:text-slate-100'
+                            )}
+                          >
+                            {showOnlyDue ? 'Voir toutes les tâches' : 'Voir les tâches à faire aujourd’hui'}
+                          </button>
+                          {selectedTag && (
+                            <span className="rounded-full border border-slate-600 px-3 py-1 text-xs text-slate-300">
+                              Tag #{selectedTag}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {(['created', 'alphabetical', 'recentlyCompleted'] as const).map((mode) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => setSortMode(mode)}
+                              className={cn(
+                                'rounded-full border px-3 py-1 text-xs font-semibold transition',
+                                sortMode === mode
+                                  ? 'border-indigo-400/70 bg-indigo-500/20 text-indigo-100'
+                                  : 'border-slate-600 text-slate-300 hover:text-slate-100'
+                              )}
+                            >
+                              {mode === 'created'
+                                ? 'Création'
+                                : mode === 'alphabetical'
+                                ? 'A → Z'
+                                : 'Progression'}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="mt-2 text-xs text-slate-500 text-right">
+                          {selectedTag ? `Tag filtré : #${selectedTag}` : 'Combinez recherche, filtres et tri pour affiner la liste.'}
+                        </p>
+                      </div>
+
+                      {availableTags.length > 0 && (
+                        <TagsFilter selectedTag={selectedTag} onTagSelect={setSelectedTag} tags={availableTags} />
+                      )}
+                    </div>
+
+                    {visibleHabits.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-center shadow-inner shadow-black/30">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70">
+                          <Icon name="note" className="h-8 w-8 text-indigo-200" strokeWidth={1.4} />
+                        </div>
+                        <h3 className="text-lg font-semibold text-slate-100">
+                          {searchQuery.trim()
+                            ? 'Aucune habitude trouvée'
+                            : selectedTag
+                            ? `Aucune habitude avec le tag "${selectedTag}"`
+                            : 'Aucune habitude créée'}
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-400">
+                          {searchQuery.trim()
+                            ? 'Essayez une autre recherche ou effacez le champ pour voir toutes les habitudes'
+                            : selectedTag
+                            ? 'Essayez un autre tag ou créez une nouvelle habitude'
+                            : 'Commencez par définir votre première habitude'}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {visibleHabits.map((habit) => (
+                          <div
+                            key={habit.id}
+                            className="rounded-2xl border border-slate-700 bg-slate-900/50 p-4 shadow-[0_25px_50px_-45px_rgba(0,0,0,0.9)] transition hover:border-slate-500/60"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="text-base font-semibold text-slate-100">{habit.name}</h3>
+                                  <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
+                                </div>
+                                {habit.description && (
+                                  <p className="mt-1 text-sm text-slate-400">{habit.description}</p>
+                                )}
+                                <div className="mt-3 flex flex-wrap gap-1.5">
+                                  {habit.targetDays.map((day) => (
+                                    <Badge
+                                      key={day}
+                                      variant="outline"
+                                      className="border-indigo-500/40 bg-indigo-500/10 text-xs text-indigo-100"
+                                    >
+                                      {day.charAt(0).toUpperCase() + day.slice(1)}
+                                    </Badge>
+                                  ))}
+                                </div>
+                                {habit.tags && habit.tags.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-1.5">
+                                    {habit.tags.map((tag) => (
+                                      <Badge
+                                        key={tag}
+                                        variant="secondary"
+                                        className="text-xs border border-slate-700 bg-slate-900/20 text-slate-200"
+                                      >
+                                        #{tag}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditHabit(habit)}
+                                  className="text-slate-400 hover:text-indigo-300"
+                                  aria-label="Modifier l'habitude"
+                                >
+                                  <Icon name="pencil" className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDuplicateHabit(habit)}
+                                  className="text-slate-400 hover:text-blue-300"
+                                  aria-label="Dupliquer l'habitude"
+                                >
+                                  <Icon name="copy" className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleArchiveHabit(habit)}
+                                  className="text-slate-400 hover:text-amber-300"
+                                  aria-label="Archiver l'habitude"
+                                >
+                                  <Icon name="archive" className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteHabit(habit)}
+                                  className="text-slate-500 hover:text-rose-300"
+                                  aria-label="Supprimer l'habitude"
+                                >
+                                  <Icon name="trash" className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="border-t border-slate-800/70 pt-4">
+                      <p className="mb-3 text-sm font-medium text-slate-100">Sauvegarde et transfert</p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1 border border-slate-700 bg-slate-900/40 text-slate-100"
+                          onClick={handleExportData}
+                        >
+                          <Icon name="export" className="mr-2 h-4 w-4" />
+                          Exporter
+                        </Button>
+                        <label className="flex-1 cursor-pointer">
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImportFile}
+                            className="hidden"
+                            id="import-file-input"
+                          />
+                          <Button
+                            variant="outline"
+                            className="w-full border border-slate-700 bg-slate-900/40 text-slate-100"
+                            type="button"
+                            onClick={() => document.getElementById('import-file-input')?.click()}
+                          >
+                            <Icon name="import" className="mr-2 h-4 w-4" />
+                            Importer
+                          </Button>
+                        </label>
+                      </div>
+                    </div>
+
+                    {archivedList.length > 0 && (
+                      <div className="space-y-4 border-t border-slate-800/70 pt-4">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-semibold text-slate-200">Archivées</h3>
+                          <Badge
+                            variant="secondary"
+                            className="text-xs border border-slate-700 bg-slate-900/40 text-slate-100"
+                          >
+                            {archivedList.length}
+                          </Badge>
+                        </div>
+                        <div className="space-y-3">
+                          {archivedList.map((habit) => (
+                            <div
+                              key={habit.id}
+                              className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-amber-100 shadow-inner shadow-black/30"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="text-base font-semibold text-amber-100 line-through">{habit.name}</h3>
+                                    <Badge
+                                      variant="outline"
+                                      className="border-amber-400/70 bg-amber-500/15 text-xs text-amber-100"
+                                    >
+                                      Archivée
+                                    </Badge>
+                                    <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
+                                  </div>
+                                  {habit.description && (
+                                    <p className="mt-1 text-sm text-amber-50/80">{habit.description}</p>
+                                  )}
+                                  <div className="mt-3 flex flex-wrap gap-1.5">
+                                    {habit.targetDays.map((day) => (
+                                      <Badge
+                                        key={day}
+                                        variant="outline"
+                                        className="border-amber-400/60 bg-amber-500/10 text-xs text-amber-100"
+                                      >
+                                        {day.charAt(0).toUpperCase() + day.slice(1)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                  {habit.tags && habit.tags.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                      {habit.tags.map((tag) => (
+                                        <Badge
+                                          key={tag}
+                                          variant="secondary"
+                                          className="text-xs border border-amber-400/40 bg-amber-500/10 text-amber-50"
+                                        >
+                                          #{tag}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleUnarchiveHabit(habit)}
+                                    className="text-amber-100 hover:bg-amber-400/20"
+                                    aria-label="Réactiver l'habitude"
+                                  >
+                                    Réactiver
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
         </main>
 
         <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-4">

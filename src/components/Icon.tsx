@@ -10,6 +10,7 @@ import {
   Flame,
   NotebookPen,
   Pencil,
+  Search,
   Settings,
   Sparkles,
   Star,
@@ -37,7 +38,8 @@ type IconName =
   | 'flame'
   | 'star'
   | 'sparkles'
-  | 'close';
+  | 'close'
+  | 'search';
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'ref'> {
   name: IconName;
@@ -60,7 +62,8 @@ const iconComponents: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> =
   flame: Flame,
   star: Star,
   sparkles: Sparkles,
-  close: X
+  close: X,
+  search: Search
 };
 
 export function Icon({ name, className, strokeWidth = 1.8, ...props }: IconProps) {
