@@ -1,5 +1,6 @@
 import { Habit, DailyHabit } from '@/types/habit';
 import { getDayOfWeek, getDateKey } from '@/utils/dateUtils';
+import { AuthService } from './authService';
 
 const STORAGE_KEY = 'trackit-habits';
 const COMPLETIONS_KEY = 'trackit-completions';
@@ -44,7 +45,7 @@ export class HabitStorage {
     }
   }
 
-  static addHabit(habit: Omit<Habit, 'id' | 'createdAt'>): Habit {
+  static async addHabit(habit: Omit<Habit, 'id' | 'createdAt'>): Promise<Habit> {
     const habits = this.loadHabits();
     // Normaliser les tags (minuscules, sans doublons)
     const normalizedTags = (habit.tags || [])
@@ -64,6 +65,17 @@ export class HabitStorage {
     
     habits.push(newHabit);
     this.saveHabits(habits);
+    
+    // Synchroniser avec la BDD si connecté
+    if (AuthService.isAuthenticated()) {
+      try {
+        await this.syncHabitToDB(newHabit);
+      } catch (error) {
+        console.error('Erreur lors de la synchronisation de l\'habitude:', error);
+        // Continuer même en cas d'erreur (mode offline)
+      }
+    }
+    
     return newHabit;
   }
 
@@ -128,7 +140,7 @@ export class HabitStorage {
     this.saveCompletions(allCompletions);
   }
 
-  static updateHabit(id: string, updates: Partial<Omit<Habit, 'id' | 'createdAt'>>): Habit | null {
+  static async updateHabit(id: string, updates: Partial<Omit<Habit, 'id' | 'createdAt'>>): Promise<Habit | null> {
     const habits = this.loadHabits();
     const index = habits.findIndex(habit => habit.id === id);
     
@@ -151,10 +163,21 @@ export class HabitStorage {
     };
     
     this.saveHabits(habits);
+    
+    // Synchroniser avec la BDD si connecté
+    if (AuthService.isAuthenticated()) {
+      try {
+        await this.syncHabitToDB(habits[index]);
+      } catch (error) {
+        console.error('Erreur lors de la synchronisation de l\'habitude:', error);
+        // Continuer même en cas d'erreur (mode offline)
+      }
+    }
+    
     return habits[index];
   }
 
-  static deleteHabit(id: string): boolean {
+  static async deleteHabit(id: string): Promise<boolean> {
     const habits = this.loadHabits();
     const filteredHabits = habits.filter(habit => habit.id !== id);
     
@@ -166,6 +189,19 @@ export class HabitStorage {
     
     // Supprimer aussi l'historique de progression de cette habitude
     this.removeHabitFromCompletions(id);
+    
+    // Synchroniser avec la BDD si connecté
+    if (AuthService.isAuthenticated()) {
+      try {
+        await fetch(`/api/habits/${id}`, {
+          method: 'DELETE',
+          headers: AuthService.getAuthHeaders()
+        });
+      } catch (error) {
+        console.error('Erreur lors de la synchronisation de la suppression:', error);
+        // Continuer même en cas d'erreur (mode offline)
+      }
+    }
     
     return true;
   }
@@ -205,17 +241,17 @@ export class HabitStorage {
       });
   }
 
-  static archiveHabit(id: string): boolean {
-    const updated = this.updateHabit(id, { archived: true });
+  static async archiveHabit(id: string): Promise<boolean> {
+    const updated = await this.updateHabit(id, { archived: true });
     return updated !== null;
   }
 
-  static unarchiveHabit(id: string): boolean {
-    const updated = this.updateHabit(id, { archived: false });
+  static async unarchiveHabit(id: string): Promise<boolean> {
+    const updated = await this.updateHabit(id, { archived: false });
     return updated !== null;
   }
 
-  static toggleHabitCompletion(habitId: string, date: Date): void {
+  static async toggleHabitCompletion(habitId: string, date: Date): Promise<void> {
     const targetDate = new Date(date);
     targetDate.setHours(0, 0, 0, 0);
     const today = new Date();
@@ -235,7 +271,9 @@ export class HabitStorage {
     const dayCompletions = completions[dateKey];
     const index = dayCompletions.findIndex(entry => entry.habitId === habitId);
     
-    if (index > -1) {
+    const wasCompleted = index > -1;
+    
+    if (wasCompleted) {
       dayCompletions.splice(index, 1);
     } else {
       dayCompletions.push({
@@ -245,6 +283,20 @@ export class HabitStorage {
     }
     
     this.saveCompletions(completions);
+    
+    // Synchroniser avec la BDD si connecté
+    if (AuthService.isAuthenticated()) {
+      try {
+        await fetch(`/api/habits/${habitId}/completions`, {
+          method: 'POST',
+          headers: AuthService.getAuthHeaders(),
+          body: JSON.stringify({ date: targetDate.toISOString() })
+        });
+      } catch (error) {
+        console.error('Erreur lors de la synchronisation de la complétion:', error);
+        // Continuer même en cas d'erreur (mode offline)
+      }
+    }
   }
 
   private static loadCompletions(): HabitCompletions {
@@ -855,6 +907,132 @@ export class HabitStorage {
     } catch (error) {
       console.error('Erreur lors de l\'import des données:', error);
       return { success: false, habitsAdded: 0, completionsAdded: 0 };
+    }
+  }
+
+  /**
+   * Synchronise une habitude avec la BDD
+   */
+  private static async syncHabitToDB(habit: Habit): Promise<void> {
+    if (!AuthService.isAuthenticated()) {
+      return;
+    }
+
+    try {
+      // Vérifier si l'habitude existe déjà dans la BDD
+      const response = await fetch(`/api/habits/${habit.id}`, {
+        method: 'PUT',
+        headers: AuthService.getAuthHeaders(),
+        body: JSON.stringify({
+          name: habit.name,
+          description: habit.description,
+          targetDays: habit.targetDays,
+          tags: habit.tags,
+          archived: habit.archived,
+          notificationEnabled: habit.notificationEnabled,
+          notificationTime: habit.notificationTime
+        })
+      });
+
+      if (!response.ok && response.status === 404) {
+        // L'habitude n'existe pas, la créer
+        await fetch('/api/habits', {
+          method: 'POST',
+          headers: AuthService.getAuthHeaders(),
+          body: JSON.stringify({
+            name: habit.name,
+            description: habit.description,
+            targetDays: habit.targetDays,
+            tags: habit.tags,
+            notificationEnabled: habit.notificationEnabled,
+            notificationTime: habit.notificationTime
+          })
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation de l\'habitude:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Synchronise toutes les habitudes du localStorage avec la BDD
+   */
+  static async syncAll(): Promise<void> {
+    if (!AuthService.isAuthenticated()) {
+      return;
+    }
+
+    try {
+      const habits = this.loadHabits();
+      const completions = this.loadCompletions();
+
+      const response = await fetch('/api/habits/sync', {
+        method: 'POST',
+        headers: AuthService.getAuthHeaders(),
+        body: JSON.stringify({
+          habits,
+          completions
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la synchronisation');
+      }
+
+      const data = await response.json();
+      
+      // Mettre à jour le localStorage avec les données de la BDD
+      this.saveHabits(data.habits);
+      this.saveCompletions(data.completions);
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation complète:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Charge les habitudes depuis la BDD si connecté, sinon depuis le localStorage
+   */
+  static async loadHabitsFromDB(): Promise<Habit[]> {
+    if (!AuthService.isAuthenticated()) {
+      return this.loadHabits();
+    }
+
+    try {
+      const response = await fetch('/api/habits', {
+        headers: AuthService.getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        // En cas d'erreur, utiliser le localStorage
+        return this.loadHabits();
+      }
+
+      const data = await response.json();
+      const dbHabits = data.habits.map((habit: any) => ({
+        ...habit,
+        createdAt: new Date(habit.createdAt)
+      }));
+
+      // Mettre à jour le localStorage
+      this.saveHabits(dbHabits);
+
+      // Charger les complétions depuis la BDD
+      const completions: HabitCompletions = {};
+      for (const habit of dbHabits) {
+        // Les complétions sont déjà incluses dans la réponse de l'API
+        // On les reconstruit depuis les habitudes
+      }
+
+      // Pour les complétions, on les récupère depuis les habitudes retournées
+      // ou on peut créer une route dédiée si nécessaire
+      
+      return dbHabits;
+    } catch (error) {
+      console.error('Erreur lors du chargement depuis la BDD:', error);
+      // En cas d'erreur, utiliser le localStorage
+      return this.loadHabits();
     }
   }
 }

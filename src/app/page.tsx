@@ -75,15 +75,14 @@ export default function Home() {
   }, [allHabits]);
 
   // Filtrer les habitudes par tag sélectionné et recherche (exclure les archivées)
+  // On utilise dailyHabits au lieu de allHabits pour avoir les données à jour avec les complétions
   const dueHabitIds = useMemo(() => {
-    void allHabits;
-    const todaysHabits = HabitStorage.getHabitsForDate(currentDate);
     return new Set(
-      todaysHabits
+      dailyHabits
         .filter(habit => !habit.isCompleted && !habit.isFuture)
         .map(habit => habit.id)
     );
-  }, [currentDate, allHabits]);
+  }, [dailyHabits]);
 
   const filteredHabits = useCallback(() => {
     let filtered = allHabits.filter(habit => !habit.archived);
@@ -293,11 +292,11 @@ export default function Home() {
     setViewMode('manage');
   };
 
-  const handleHabitUpdated = (updatedHabit: Habit) => {
+  const handleHabitUpdated = async (updatedHabit: Habit) => {
     // Sauvegarder l'ancienne version pour l'annulation
     const oldHabit = allHabits.find(h => h.id === updatedHabit.id);
     
-    const updated = HabitStorage.updateHabit(updatedHabit.id, {
+    const updated = await HabitStorage.updateHabit(updatedHabit.id, {
       name: updatedHabit.name,
       description: updatedHabit.description,
       targetDays: updatedHabit.targetDays,
@@ -351,8 +350,8 @@ export default function Home() {
     setHabitToDelete(habit);
   };
 
-  const handleArchiveHabit = (habit: Habit) => {
-    const success = HabitStorage.archiveHabit(habit.id);
+  const handleArchiveHabit = async (habit: Habit) => {
+    const success = await HabitStorage.archiveHabit(habit.id);
     if (success) {
       setAllHabits(prev => prev.map(h => 
         h.id === habit.id ? { ...h, archived: true } : h
@@ -364,8 +363,8 @@ export default function Home() {
     }
   };
 
-  const handleUnarchiveHabit = (habit: Habit) => {
-    const success = HabitStorage.unarchiveHabit(habit.id);
+  const handleUnarchiveHabit = async (habit: Habit) => {
+    const success = await HabitStorage.unarchiveHabit(habit.id);
     if (success) {
       setAllHabits(prev => prev.map(h => 
         h.id === habit.id ? { ...h, archived: false } : h
@@ -594,14 +593,14 @@ export default function Home() {
     };
   }, []);
 
-  const confirmDeleteHabit = () => {
+  const confirmDeleteHabit = async () => {
     if (!habitToDelete) return;
     
     // Sauvegarder l'habitude et ses complétions pour l'annulation
     const habitToRestore = { ...habitToDelete };
     const completions = HabitStorage.saveHabitCompletions(habitToDelete.id);
     
-    const success = HabitStorage.deleteHabit(habitToDelete.id);
+    const success = await HabitStorage.deleteHabit(habitToDelete.id);
     if (success) {
       setAllHabits(prev => prev.filter(habit => habit.id !== habitToDelete.id));
       setHabitToDelete(null);
@@ -615,7 +614,7 @@ export default function Home() {
     }
   };
 
-  const handleUndo = () => {
+  const handleUndo = async () => {
     const undoResult = undo();
     if (!undoResult) return;
 
@@ -639,7 +638,7 @@ export default function Home() {
     } else if (undoResult.action === 'modification') {
       // Restaurer l'ancienne version
       const oldHabit = undoResult.data as Habit;
-      const success = HabitStorage.updateHabit(oldHabit.id, {
+      const success = await HabitStorage.updateHabit(oldHabit.id, {
         name: oldHabit.name,
         description: oldHabit.description,
         targetDays: oldHabit.targetDays,
@@ -664,8 +663,10 @@ export default function Home() {
     }
   };
 
-  const handleHabitToggle = (habitId: string) => {
-    HabitStorage.toggleHabitCompletion(habitId, currentDate);
+  const handleHabitToggle = async (habitId: string) => {
+    await HabitStorage.toggleHabitCompletion(habitId, currentDate);
+    // Recharger les habitudes pour mettre à jour le compteur "Encore à cocher"
+    loadHabits();
     loadDailyHabits();
     const updatedHabit = HabitStorage.loadHabits().find(habit => habit.id === habitId);
     if (updatedHabit?.notificationEnabled) {
@@ -945,7 +946,7 @@ export default function Home() {
                             </button>
                           )}
                         </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2 md:flex-nowrap">
                           <button
                             type="button"
                             onClick={() => setShowOnlyDue((prev) => !prev)}
@@ -964,8 +965,6 @@ export default function Home() {
                               Tag #{selectedTag}
                             </span>
                           )}
-                        </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-1.5 sm:gap-2">
                           {(['created', 'alphabetical', 'recentlyCompleted'] as const).map((mode) => (
                             <button
                               key={mode}

@@ -91,7 +91,7 @@ export default function CreateHabitForm({ onHabitCreated, onError, initialValues
     setIsSubmitting(true);
 
     try {
-      const newHabit = HabitStorage.addHabit({
+      const newHabit = await HabitStorage.addHabit({
         name: name.trim(),
         description: description.trim() || undefined,
         targetDays,

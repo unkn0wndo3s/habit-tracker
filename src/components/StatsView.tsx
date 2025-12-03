@@ -162,35 +162,72 @@ export default function StatsView({ habits }: StatsViewProps) {
         <CardHeader>
           <CardTitle>Heatmap des 30 derniers jours</CardTitle>
           <CardDescription>
-            Chaque jour est coloré selon le nombre d’habitudes complétées.
+            Chaque jour est coloré selon le nombre d'habitudes complétées.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           {heatmapData.length === 0 ? (
             <p className="text-sm text-slate-400">Aucune donnée disponible.</p>
           ) : (
-            <div className="grid grid-cols-[repeat(10,minmax(16px,1fr))] gap-0.5 sm:grid-cols-[repeat(10,minmax(20px,1fr))] sm:gap-1">
-              {heatmapData.map((point) => {
-                const rate =
-                  point.scheduledCount === 0
-                    ? 0
-                    : Math.round((point.completedCount / point.scheduledCount) * 100);
-                return (
-                  <div
-                    key={point.dateKey}
-                    className={cn(
-                      'h-6 rounded-md border text-[9px] font-semibold transition sm:h-8 sm:text-[10px]',
-                      getHeatmapColor(rate)
-                    )}
-                    title={`${formatLongDate(point.date)} · ${point.completedCount}/${
-                      point.scheduledCount
-                    } habitudes`}
-                  >
-                    <span className="sr-only">{rate}%</span>
+            <>
+              <div className="grid grid-cols-[repeat(10,minmax(16px,1fr))] gap-0.5 sm:grid-cols-[repeat(10,minmax(20px,1fr))] sm:gap-1">
+                {heatmapData.map((point) => {
+                  const completedCount = point.completedCount;
+                  const intensity = getHeatmapIntensity(completedCount, heatmapData);
+                  return (
+                    <div
+                      key={point.dateKey}
+                      className={cn(
+                        'h-6 rounded-sm transition-all hover:scale-110 hover:ring-2 hover:ring-indigo-400/50 sm:h-8',
+                        getHeatmapColorClass(intensity)
+                      )}
+                      title={`${formatLongDate(point.date)}: ${completedCount} ${completedCount === 1 ? 'habitude' : 'habitudes'} complétée${completedCount > 1 ? 's' : ''}${point.scheduledCount > 0 ? ` sur ${point.scheduledCount}` : ''}`}
+                    >
+                      <span className="sr-only">
+                        {completedCount} {completedCount === 1 ? 'habitude' : 'habitudes'} complétée{completedCount > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Légende style GitHub */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <span className="hidden sm:inline">Moins</span>
+                  <div className="flex items-center gap-0.5">
+                    <div className={cn('h-3 w-3 rounded-sm border', getHeatmapColorClass(0))} title="Aucune habitude complétée" />
+                    <div className={cn('h-3 w-3 rounded-sm border', getHeatmapColorClass(1))} title="Peu d'habitudes complétées" />
+                    <div className={cn('h-3 w-3 rounded-sm border', getHeatmapColorClass(2))} title="Quelques habitudes complétées" />
+                    <div className={cn('h-3 w-3 rounded-sm border', getHeatmapColorClass(3))} title="Beaucoup d'habitudes complétées" />
+                    <div className={cn('h-3 w-3 rounded-sm border', getHeatmapColorClass(4))} title="Maximum d'habitudes complétées" />
                   </div>
-                );
-              })}
-            </div>
+                  <span className="hidden sm:inline">Plus</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-500 sm:text-xs">
+                  <span className="flex items-center gap-1">
+                    <div className={cn('h-2.5 w-2.5 rounded-sm border', getHeatmapColorClass(0))} />
+                    <span>Aucune</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className={cn('h-2.5 w-2.5 rounded-sm border', getHeatmapColorClass(1))} />
+                    <span>Faible</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className={cn('h-2.5 w-2.5 rounded-sm border', getHeatmapColorClass(2))} />
+                    <span>Moyen-faible</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className={cn('h-2.5 w-2.5 rounded-sm border', getHeatmapColorClass(3))} />
+                    <span>Moyen-élevé</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className={cn('h-2.5 w-2.5 rounded-sm border', getHeatmapColorClass(4))} />
+                    <span>Élevé</span>
+                  </span>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -471,20 +508,60 @@ function formatLongDate(date: Date) {
   });
 }
 
-function getHeatmapColor(rate: number) {
-  if (rate === 0) {
-    return 'border-slate-800/70 bg-slate-900/40 text-slate-500';
+/**
+ * Calcule l'intensité (0-4) basée sur le nombre de complétions
+ * Utilise les percentiles pour une distribution équilibrée comme GitHub
+ */
+function getHeatmapIntensity(completedCount: number, allData: CompletionPoint[]): number {
+  if (completedCount === 0) return 0;
+  
+  // Calculer les valeurs de complétion pour tous les jours
+  const allCounts = allData.map(p => p.completedCount).filter(c => c > 0);
+  if (allCounts.length === 0) return 0;
+  
+  // Trier pour calculer les percentiles
+  const sorted = [...allCounts].sort((a, b) => a - b);
+  const max = sorted[sorted.length - 1];
+  
+  if (max === 0) return 0;
+  
+  // Calculer les seuils basés sur les percentiles (style GitHub)
+  const p20 = sorted[Math.floor(sorted.length * 0.2)] || 0;
+  const p40 = sorted[Math.floor(sorted.length * 0.4)] || 0;
+  const p60 = sorted[Math.floor(sorted.length * 0.6)] || 0;
+  const p80 = sorted[Math.floor(sorted.length * 0.8)] || 0;
+  
+  // Déterminer l'intensité basée sur les seuils
+  if (completedCount <= p20) return 1; // Low
+  if (completedCount <= p40) return 2; // Medium-low
+  if (completedCount <= p60) return 3; // Medium-high
+  if (completedCount <= p80) return 4; // High
+  return 4; // More (maximum)
+}
+
+/**
+ * Retourne les classes CSS pour chaque niveau d'intensité (style GitHub)
+ */
+function getHeatmapColorClass(intensity: number): string {
+  switch (intensity) {
+    case 0:
+      // No activity - gris très clair
+      return 'bg-slate-800/30 border border-slate-700/30';
+    case 1:
+      // Low - vert très clair
+      return 'bg-emerald-500/20 border border-emerald-500/30';
+    case 2:
+      // Medium-low - vert clair
+      return 'bg-emerald-500/40 border border-emerald-500/50';
+    case 3:
+      // Medium-high - vert moyen
+      return 'bg-emerald-500/60 border border-emerald-500/70';
+    case 4:
+      // High/More - vert foncé
+      return 'bg-emerald-500/80 border border-emerald-500/90';
+    default:
+      return 'bg-slate-800/30 border border-slate-700/30';
   }
-  if (rate < 30) {
-    return 'border-rose-500/40 bg-rose-500/20 text-rose-100';
-  }
-  if (rate < 60) {
-    return 'border-amber-400/40 bg-amber-400/20 text-amber-100';
-  }
-  if (rate < 90) {
-    return 'border-emerald-400/40 bg-emerald-400/20 text-emerald-100';
-  }
-  return 'border-emerald-300/60 bg-emerald-300/25 text-emerald-50';
 }
 
 
