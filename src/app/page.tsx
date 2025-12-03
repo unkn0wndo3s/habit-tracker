@@ -758,7 +758,7 @@ export default function Home() {
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col gap-4 px-3 pb-10 md:gap-5 md:px-4">
         <main className="flex-1 space-y-3 pt-2 md:space-y-4">
           {shouldDisplayInstallCTA && (
-            <Card className="border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-900 shadow-xl shadow-indigo-900/40">
+            <Card className="md:hidden border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-900 shadow-xl shadow-indigo-900/40">
               <CardContent className="flex flex-col gap-3 p-5">
                 <div>
                   <p className="text-sm font-semibold text-indigo-100">Installer l'app</p>
@@ -904,7 +904,7 @@ export default function Home() {
                       </div>
                     </div>
 
-                    <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-[2fr_1fr] lg:grid-cols-[1.7fr_1fr]">
+                    <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-[2fr,1fr] lg:grid-cols-[1.7fr,1fr]">
                       <div className="w-full min-w-0 rounded-2xl border border-slate-800/70 bg-slate-900/40 p-3 shadow-inner shadow-black/30 sm:p-4">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                           <p className="text-sm font-semibold text-slate-200 sm:flex-1 sm:text-right">Recherche & filtre rapide</p>
