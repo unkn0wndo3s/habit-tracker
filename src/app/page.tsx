@@ -761,14 +761,15 @@ export default function Home() {
             <Card className="md:hidden border border-indigo-500/40 bg-gradient-to-br from-indigo-950/50 via-slate-900 to-slate-900 shadow-xl shadow-indigo-900/40">
               <CardContent className="flex flex-col gap-3 p-5">
                 <div>
-                  <p className="text-sm font-semibold text-indigo-100">Installer l'app</p>
-                  <p className="text-xs text-slate-300">
+                  <p className="text-sm font-semibold text-indigo-100" title="Installer l'app">Installer l'app</p>
+                  <p className="text-xs text-slate-300" title="Ajoutez TrackIt sur votre écran d'accueil pour un accès hors ligne et en plein écran.">
                     Ajoutez TrackIt sur votre écran d'accueil pour un accès hors ligne et en plein écran.
                   </p>
                 </div>
                 <Button
                   onClick={handleInstallApp}
                   className="w-full border border-indigo-500/50 bg-indigo-500/30 text-slate-50 shadow-[0_15px_40px_rgba(99,102,241,0.35)] hover:bg-indigo-500/50"
+                  title="Installer l'app"
                 >
                   Installer l'app
                 </Button>
@@ -791,10 +792,10 @@ export default function Home() {
             <Card className="border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30">
               <CardHeader className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Modifier l&apos;habitude</CardTitle>
-                  <CardDescription>Ajustez les détails pour rester aligné</CardDescription>
+                  <CardTitle title="Modifier l'habitude">Modifier l&apos;habitude</CardTitle>
+                  <CardDescription title="Ajustez les détails pour rester aligné">Ajustez les détails pour rester aligné</CardDescription>
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleCancelEdit} aria-label="Fermer l'édition">
+                <Button variant="ghost" size="icon" onClick={handleCancelEdit} aria-label="Fermer l'édition" title="Fermer l'édition">
                   <Icon name="close" className="h-5 w-5" />
                 </Button>
               </CardHeader>
@@ -852,8 +853,8 @@ export default function Home() {
               return (
                 <Card className="w-full border border-slate-800/70 bg-slate-900/60 shadow-2xl shadow-black/30">
                   <CardHeader>
-                    <CardTitle>Gérer les habitudes</CardTitle>
-                    <CardDescription>Filtrez, éditez et organisez vos rituels</CardDescription>
+                    <CardTitle title="Gérer les habitudes">Gérer les habitudes</CardTitle>
+                    <CardDescription title="Filtrez, éditez et organisez vos rituels">Filtrez, éditez et organisez vos rituels</CardDescription>
                   </CardHeader>
                   <CardContent className="w-full space-y-6">
                     <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
@@ -863,15 +864,15 @@ export default function Home() {
                           className="rounded-2xl border border-white/5 bg-gradient-to-br from-white/5 via-transparent to-transparent px-3 py-3 shadow-inner shadow-black/30 backdrop-blur sm:px-4 sm:py-4"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <div className="p-1.5 text-white">
+                            <div className="p-1.5 text-white" title={stat.label}>
                               <Icon name={stat.icon} className="h-3 w-3" />
                             </div>
-                             <span className="text-[10px] uppercase tracking-[0.35em] text-slate-500 text-right flex-1 sm:w-32">
+                             <span className="text-[10px] uppercase tracking-[0.35em] text-slate-500 text-right flex-1 sm:w-32" title={stat.label}>
                               {stat.label}
                             </span>
                           </div>
-                          <p className="mt-3 text-2xl font-semibold text-slate-50 sm:mt-4 sm:text-3xl">{formatStatValue(stat.value)}</p>
-                          <p className="text-xs text-slate-400">{stat.caption}</p>
+                          <p className="mt-3 text-2xl font-semibold text-slate-50 sm:mt-4 sm:text-3xl" title={`${formatStatValue(stat.value)} ${stat.caption}`}>{formatStatValue(stat.value)}</p>
+                          <p className="text-xs text-slate-400" title={stat.caption}>{stat.caption}</p>
                         </div>
                       ))}
                     </div>
@@ -879,26 +880,27 @@ export default function Home() {
                     <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-r from-indigo-950/60 via-slate-900/50 to-slate-900/60 p-4 shadow-[0_25px_60px_-45px_rgba(99,102,241,0.8)] sm:p-5">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-slate-100">Créer une habitude</p>
-                          <p className="mt-1 text-xs text-slate-300">
+                          <p className="text-sm font-semibold text-slate-100" title="Créer une habitude">Créer une habitude</p>
+                          <p className="mt-1 text-xs text-slate-300" title="Définissez un nom, des tags et un planning clair ou dupliquez une habitude existante.">
                             Définissez un nom, des tags et un planning clair ou dupliquez une habitude existante.
                           </p>
                         </div>
                         <Button
                           className="w-full border border-white/10 bg-white/10 text-slate-100 sm:w-auto sm:shrink-0"
                           onClick={handleStartCreateHabit}
+                          title="+ Nouvelle habitude"
                         >
                           + Nouvelle habitude
                         </Button>
                       </div>
                       <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-slate-200 sm:mt-4">
-                        <Badge variant="outline" className="border-white/20 text-slate-100">
+                        <Badge variant="outline" className="border-white/20 text-slate-100" title={`${activeHabitsCount} actives`}>
                           {activeHabitsCount} actives
                         </Badge>
-                        <Badge variant="outline" className="border-white/20 text-slate-100">
+                        <Badge variant="outline" className="border-white/20 text-slate-100" title={`${archivedCount} archivées`}>
                           {archivedCount} archivées
                         </Badge>
-                        <Badge variant="outline" className="border-white/20 text-slate-100">
+                        <Badge variant="outline" className="border-white/20 text-slate-100" title={`${availableTags.length} tags`}>
                           {availableTags.length} tags
                         </Badge>
                       </div>
@@ -907,25 +909,29 @@ export default function Home() {
                     <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-[2fr,1fr] lg:grid-cols-[1.7fr,1fr]">
                       <div className="w-full min-w-0 rounded-2xl border border-slate-800/70 bg-slate-900/40 p-3 shadow-inner shadow-black/30 sm:p-4">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                          <p className="text-sm font-semibold text-slate-200 sm:flex-1 sm:text-right">Recherche & filtre rapide</p>
+                          <p className="text-sm font-semibold text-slate-200 sm:flex-1 sm:text-right" title="Recherche & filtre rapide">Recherche & filtre rapide</p>
                           {selectedTag && (
                             <button
                               type="button"
                               onClick={() => setSelectedTag(null)}
                               className="self-start text-xs text-slate-400 underline-offset-4 hover:text-slate-200 sm:self-auto"
+                              title="Effacer le tag"
                             >
                               Effacer le tag
                             </button>
                           )}
                         </div>
                         <div className="mt-3 flex items-center gap-2 rounded-2xl border border-slate-700/70 bg-slate-900/30 px-3 py-2 sm:gap-3 sm:px-4 sm:py-2.5">
-                          <Icon name="search" className="h-4 w-4 shrink-0 text-slate-500" />
+                          <div title="Rechercher une habitude">
+                            <Icon name="search" className="h-4 w-4 shrink-0 text-slate-500" />
+                          </div>
                           <Input
                             type="text"
                             placeholder="Rechercher une habitude..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="flex-1 border-none bg-transparent px-0 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0 sm:text-base"
+                            title="Rechercher une habitude"
                           />
                           {searchQuery && (
                             <button
@@ -933,6 +939,7 @@ export default function Home() {
                               onClick={() => setSearchQuery('')}
                               className="shrink-0 text-slate-500 transition-colors hover:text-slate-100"
                               aria-label="Effacer la recherche"
+                              title="Effacer la recherche"
                             >
                               <Icon name="close" className="h-4 w-4" />
                             </button>
@@ -948,11 +955,12 @@ export default function Home() {
                                 ? 'border-rose-400/70 bg-rose-500/20 text-rose-100'
                                 : 'border-slate-600 text-slate-300 hover:text-slate-100'
                             )}
+                            title={showOnlyDue ? 'Voir toutes les tâches' : "Voir les tâches à faire aujourd'hui"}
                           >
                             {showOnlyDue ? 'Voir toutes les tâches' : "Voir les tâches à faire aujourd'hui"}
                           </button>
                           {selectedTag && (
-                            <span className="rounded-full border border-slate-600 px-2.5 py-1 text-[11px] text-slate-300 sm:px-3 sm:text-xs">
+                            <span className="rounded-full border border-slate-600 px-2.5 py-1 text-[11px] text-slate-300 sm:px-3 sm:text-xs" title={`Tag #${selectedTag}`}>
                               Tag #{selectedTag}
                             </span>
                           )}
@@ -969,6 +977,11 @@ export default function Home() {
                                   ? 'border-indigo-400/70 bg-indigo-500/20 text-indigo-100'
                                   : 'border-slate-600 text-slate-300 hover:text-slate-100'
                               )}
+                              title={mode === 'created'
+                                ? 'Création'
+                                : mode === 'alphabetical'
+                                ? 'A → Z'
+                                : 'Progression'}
                             >
                               {mode === 'created'
                                 ? 'Création'
@@ -978,7 +991,7 @@ export default function Home() {
                             </button>
                           ))}
                         </div>
-                        <p className="mt-2 text-xs text-slate-500 sm:text-right">
+                        <p className="mt-2 text-xs text-slate-500 sm:text-right" title={selectedTag ? `Tag filtré : #${selectedTag}` : 'Combinez recherche, filtres et tri pour affiner la liste.'}>
                           {selectedTag ? `Tag filtré : #${selectedTag}` : 'Combinez recherche, filtres et tri pour affiner la liste.'}
                         </p>
                       </div>
@@ -990,17 +1003,25 @@ export default function Home() {
 
                     {visibleHabits.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-6 text-center shadow-inner shadow-black/30">
-                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-slate-700 bg-slate-900/70" title="Note">
                           <Icon name="note" className="h-8 w-8 text-indigo-200" strokeWidth={1.4} />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-100">
+                        <h3 className="text-lg font-semibold text-slate-100" title={searchQuery.trim()
+                            ? 'Aucune habitude trouvée'
+                            : selectedTag
+                            ? `Aucune habitude avec le tag "${selectedTag}"`
+                            : 'Aucune habitude créée'}>
                           {searchQuery.trim()
                             ? 'Aucune habitude trouvée'
                             : selectedTag
                             ? `Aucune habitude avec le tag "${selectedTag}"`
                             : 'Aucune habitude créée'}
                         </h3>
-                        <p className="mt-2 text-sm text-slate-400">
+                        <p className="mt-2 text-sm text-slate-400" title={searchQuery.trim()
+                            ? 'Essayez une autre recherche ou effacez le champ pour voir toutes les habitudes'
+                            : selectedTag
+                            ? 'Essayez un autre tag ou créez une nouvelle habitude'
+                            : 'Commencez par définir votre première habitude'}>
                           {searchQuery.trim()
                             ? 'Essayez une autre recherche ou effacez le champ pour voir toutes les habitudes'
                             : selectedTag
@@ -1016,13 +1037,13 @@ export default function Home() {
                             className="rounded-2xl border border-slate-700 bg-slate-900/50 p-3 shadow-[0_25px_50px_-45px_rgba(0,0,0,0.9)] transition hover:border-slate-500/60 sm:p-4"
                           >
                             <div className="flex items-start justify-between gap-2 sm:gap-3">
-                              <div className="flex-1 min-w-0">
+                                <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                  <h3 className="text-sm font-semibold text-slate-100 break-words sm:text-base">{habit.name}</h3>
+                                  <h3 className="text-sm font-semibold text-slate-100 break-words sm:text-base" title={habit.name}>{habit.name}</h3>
                                   <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
                                 </div>
                                 {habit.description && (
-                                  <p className="mt-1 text-sm text-slate-400">{habit.description}</p>
+                                  <p className="mt-1 text-sm text-slate-400" title={habit.description}>{habit.description}</p>
                                 )}
                                 <div className="mt-3 flex flex-wrap gap-1.5">
                                   {habit.targetDays.map((day) => (
@@ -1030,6 +1051,7 @@ export default function Home() {
                                       key={day}
                                       variant="outline"
                                       className="border-indigo-500/40 bg-indigo-500/10 text-xs text-indigo-100"
+                                      title={day.charAt(0).toUpperCase() + day.slice(1)}
                                     >
                                       {day.charAt(0).toUpperCase() + day.slice(1)}
                                     </Badge>
@@ -1042,6 +1064,7 @@ export default function Home() {
                                         key={tag}
                                         variant="secondary"
                                         className="text-xs border border-slate-700 bg-slate-900/20 text-slate-200"
+                                        title={`Tag #${tag}`}
                                       >
                                         #{tag}
                                       </Badge>
@@ -1056,6 +1079,7 @@ export default function Home() {
                                   onClick={() => handleEditHabit(habit)}
                                   className="h-8 w-8 text-slate-400 hover:text-indigo-300 sm:h-10 sm:w-10"
                                   aria-label="Modifier l'habitude"
+                                  title="Modifier l'habitude"
                                 >
                                   <Icon name="pencil" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
@@ -1065,6 +1089,7 @@ export default function Home() {
                                   onClick={() => handleDuplicateHabit(habit)}
                                   className="h-8 w-8 text-slate-400 hover:text-blue-300 sm:h-10 sm:w-10"
                                   aria-label="Dupliquer l'habitude"
+                                  title="Dupliquer l'habitude"
                                 >
                                   <Icon name="copy" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
@@ -1074,6 +1099,7 @@ export default function Home() {
                                   onClick={() => handleArchiveHabit(habit)}
                                   className="h-8 w-8 text-slate-400 hover:text-amber-300 sm:h-10 sm:w-10"
                                   aria-label="Archiver l'habitude"
+                                  title="Archiver l'habitude"
                                 >
                                   <Icon name="archive" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
@@ -1083,6 +1109,7 @@ export default function Home() {
                                   onClick={() => handleDeleteHabit(habit)}
                                   className="h-8 w-8 text-slate-500 hover:text-rose-300 sm:h-10 sm:w-10"
                                   aria-label="Supprimer l'habitude"
+                                  title="Supprimer l'habitude"
                                 >
                                   <Icon name="trash" className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
@@ -1094,12 +1121,13 @@ export default function Home() {
                     )}
 
                     <div className="border-t border-slate-800/70 pt-4">
-                      <p className="mb-3 text-sm font-medium text-slate-100">Sauvegarde et transfert</p>
+                      <p className="mb-3 text-sm font-medium text-slate-100" title="Sauvegarde et transfert">Sauvegarde et transfert</p>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           className="flex-1 border border-slate-700 bg-slate-900/40 text-slate-100"
                           onClick={handleExportData}
+                          title="Exporter"
                         >
                           <Icon name="export" className="mr-2 h-4 w-4" />
                           Exporter
@@ -1117,6 +1145,7 @@ export default function Home() {
                             className="w-full border border-slate-700 bg-slate-900/40 text-slate-100"
                             type="button"
                             onClick={() => document.getElementById('import-file-input')?.click()}
+                            title="Importer"
                           >
                             <Icon name="import" className="mr-2 h-4 w-4" />
                             Importer
@@ -1128,10 +1157,11 @@ export default function Home() {
                     {archivedList.length > 0 && (
                       <div className="space-y-4 border-t border-slate-800/70 pt-4">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-base font-semibold text-slate-200">Archivées</h3>
+                          <h3 className="text-base font-semibold text-slate-200" title="Archivées">Archivées</h3>
                           <Badge
                             variant="secondary"
                             className="text-xs border border-slate-700 bg-slate-900/40 text-slate-100"
+                            title={`${archivedList.length} archivées`}
                           >
                             {archivedList.length}
                           </Badge>
@@ -1145,17 +1175,18 @@ export default function Home() {
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="text-base font-semibold text-amber-100 line-through">{habit.name}</h3>
+                                    <h3 className="text-base font-semibold text-amber-100 line-through" title={habit.name}>{habit.name}</h3>
                                     <Badge
                                       variant="outline"
                                       className="border-amber-400/70 bg-amber-500/15 text-xs text-amber-100"
+                                      title="Archivée"
                                     >
                                       Archivée
                                     </Badge>
                                     <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
                                   </div>
                                   {habit.description && (
-                                    <p className="mt-1 text-sm text-amber-50/80">{habit.description}</p>
+                                    <p className="mt-1 text-sm text-amber-50/80" title={habit.description}>{habit.description}</p>
                                   )}
                                   <div className="mt-3 flex flex-wrap gap-1.5">
                                     {habit.targetDays.map((day) => (
@@ -1163,6 +1194,7 @@ export default function Home() {
                                         key={day}
                                         variant="outline"
                                         className="border-amber-400/60 bg-amber-500/10 text-xs text-amber-100"
+                                        title={day.charAt(0).toUpperCase() + day.slice(1)}
                                       >
                                         {day.charAt(0).toUpperCase() + day.slice(1)}
                                       </Badge>
@@ -1175,6 +1207,7 @@ export default function Home() {
                                           key={tag}
                                           variant="secondary"
                                           className="text-xs border border-amber-400/40 bg-amber-500/10 text-amber-50"
+                                          title={`Tag #${tag}`}
                                         >
                                           #{tag}
                                         </Badge>
@@ -1189,6 +1222,7 @@ export default function Home() {
                                     onClick={() => handleUnarchiveHabit(habit)}
                                     className="text-amber-100 hover:bg-amber-400/20"
                                     aria-label="Réactiver l'habitude"
+                                    title="Réactiver l'habitude"
                                   >
                                     Réactiver
                                   </Button>
@@ -1224,9 +1258,10 @@ export default function Home() {
                         ? 'bg-indigo-500/15 text-indigo-100'
                         : 'text-slate-400 hover:text-slate-100'
                     )}
+                    title={item.label}
                   >
                     <Icon name={item.icon} className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="hidden sm:inline">{item.label}</span>
+                    <span className="hidden sm:inline" title={item.label}>{item.label}</span>
                   </button>
                 );
               })}
@@ -1242,21 +1277,21 @@ export default function Home() {
           hideCloseButton
           headerContent={
             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-              <div>
-                <p className="text-base font-semibold text-slate-100">
-                  {duplicatingHabit ? "Dupliquer l'habitude" : 'Créer une habitude'}
-                </p>
-                <p className="text-xs text-slate-400">
-                  {duplicatingHabit
-                    ? 'Adaptez les paramètres avant d’enregistrer la copie.'
-                    : 'Définissez un nom, des tags et un planning clair.'}
-                </p>
-              </div>
+                <div>
+                  <p className="text-base font-semibold text-slate-100" title={duplicatingHabit ? "Dupliquer l'habitude" : 'Créer une habitude'}>
+                    {duplicatingHabit ? "Dupliquer l'habitude" : 'Créer une habitude'}
+                  </p>
+                  <p className="text-xs text-slate-400" title={duplicatingHabit ? "Adaptez les paramètres avant d'enregistrer la copie." : "Définissez un nom, des tags et un planning clair."}>
+                    {duplicatingHabit
+                      ? "Adaptez les paramètres avant d'enregistrer la copie."
+                      : "Définissez un nom, des tags et un planning clair."}
+                  </p>
+                </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={handleCancelCreateHabit}>
+                <Button variant="ghost" size="sm" onClick={handleCancelCreateHabit} title="Annuler">
                   Annuler
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleCancelCreateHabit}>
+                <Button variant="outline" size="sm" onClick={handleCancelCreateHabit} title="Terminer">
                   Terminer
                 </Button>
               </div>
