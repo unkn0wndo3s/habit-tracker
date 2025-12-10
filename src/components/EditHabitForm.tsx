@@ -144,28 +144,34 @@ export default function EditHabitForm({ habit, onHabitUpdated, onCancel, onError
         <p className="mb-3 text-sm font-medium text-slate-200">Jours ciblés *</p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {DAYS_OF_WEEK.map((day) => {
-            const isSelected = targetDays.includes(day.value);
-            return (
-              <button
-                type="button"
-                key={day.value}
-                onClick={() => handleDayToggle(day.value)}
-                className={cn(
-                  'flex items-center justify-between rounded-2xl border px-3 py-2 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:px-4 sm:py-3 sm:text-sm',
-                  isSelected
-                    ? 'border-indigo-500/60 bg-gradient-to-br from-indigo-900/60 to-indigo-900/30 text-indigo-100 shadow-sm shadow-indigo-900/30'
-                    : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:border-indigo-500 hover:text-slate-50'
-                )}
-              >
-                <span>{day.label}</span>
-                {isSelected && (
-                  <Badge variant="outline" className="border-indigo-500/70 text-indigo-100 text-[11px]">
-                    <Icon name="check" className="h-3 w-3" strokeWidth={2.2} />
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
+  const isSelected = targetDays.includes(day.value);
+  return (
+    <button
+      type="button"
+      key={day.value}
+      onClick={() => handleDayToggle(day.value)}
+      className={cn(
+        // 'w-fit' assure que le bouton ne prend que la place nécessaire.
+        // J'ai retiré 'justify-between' pour un espacement compact.
+        'flex min-w-fit items-center rounded-2xl border px-3 py-2 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:px-4 sm:py-3 sm:text-sm',
+        isSelected
+          ? 'border-indigo-500/60 bg-gradient-to-br from-indigo-900/60 to-indigo-900/30 text-indigo-100 shadow-sm shadow-indigo-900/30'
+          : 'border-slate-700 bg-slate-900/50 text-slate-300 hover:border-indigo-500 hover:text-slate-50'
+      )}
+    >
+      <span>{day.label}</span>
+      {isSelected && (
+        <Badge
+          variant="outline"
+          // 'ml-2' ajoute une marge à gauche pour séparer le texte et l'icône
+          className="ml-2 border-indigo-500/70 text-indigo-100 text-[11px]"
+        >
+          <Icon name="check" className="h-3 w-3" strokeWidth={2.2} />
+        </Badge>
+      )}
+    </button>
+  );
+})}
         </div>
         {errors.targetDays && <p className="text-sm text-rose-500 mt-2">{errors.targetDays}</p>}
       </div>

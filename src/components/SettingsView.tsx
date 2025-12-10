@@ -123,7 +123,7 @@ export default function SettingsView({ onError, onSuccess }: SettingsViewProps) 
               {isAuthenticated ? (
                 <>
                   <Link href="/account" className="flex-1 sm:flex-none">
-                    <Button variant="outline" className="w-full sm:w-auto">
+                    <Button variant="outline" className="w-full sm:w-auto whitespace-nowrap">
                       Gérer mon compte
                     </Button>
                   </Link>

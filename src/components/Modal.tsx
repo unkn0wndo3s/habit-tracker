@@ -51,7 +51,7 @@ export default function Modal({
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80 shadow-2xl shadow-black/50 backdrop-blur-xl sm:rounded-3xl`}
+        className={`relative w-full ${sizeClasses[size]} max-w-[510px] max-h-[90vh] overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/80 shadow-2xl shadow-black/50 backdrop-blur-xl sm:rounded-3xl`}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3 sm:px-6 sm:py-4">
