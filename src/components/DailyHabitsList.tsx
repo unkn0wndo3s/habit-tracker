@@ -83,9 +83,10 @@ export default function DailyHabitsList({ date, habits, onHabitToggle }: DailyHa
                   <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                     <h3
                       className={cn(
-                        'text-sm font-semibold text-slate-50 break-words sm:text-base',
+                        'text-sm font-semibold text-slate-50 break-words line-clamp-2 sm:line-clamp-1 sm:text-base',
                         habit.isCompleted && 'text-emerald-200 line-through'
                       )}
+                      title={habit.name}
                     >
                       {habit.name}
                     </h3>
@@ -99,9 +100,10 @@ export default function DailyHabitsList({ date, habits, onHabitToggle }: DailyHa
                   {habit.description && (
                     <p
                       className={cn(
-                        'mt-1 text-sm text-slate-400',
+                        'mt-1 text-sm text-slate-400 line-clamp-2 sm:line-clamp-1 whitespace-pre-line',
                         habit.isCompleted && 'text-emerald-200'
                       )}
+                      title={habit.description}
                     >
                       {habit.description}
                     </p>

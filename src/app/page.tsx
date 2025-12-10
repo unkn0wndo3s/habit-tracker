@@ -1038,11 +1038,21 @@ export default function Home() {
                             <div className="flex items-start justify-between gap-2 sm:gap-3">
                                 <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                  <h3 className="text-sm font-semibold text-slate-100 break-words sm:text-base" title={habit.name}>{habit.name}</h3>
+                                  <h3
+                                    className="text-sm font-semibold text-slate-100 break-words line-clamp-2 sm:line-clamp-1 sm:text-base"
+                                    title={habit.name}
+                                  >
+                                    {habit.name}
+                                  </h3>
                                   <StreakBadge streak={HabitStorage.getHabitStreak(habit.id)} size="sm" />
                                 </div>
                                 {habit.description && (
-                                  <p className="mt-1 text-sm text-slate-400" title={habit.description}>{habit.description}</p>
+                                  <p
+                                    className="mt-1 text-sm text-slate-400 line-clamp-2 whitespace-pre-line"
+                                    title={habit.description}
+                                  >
+                                    {habit.description}
+                                  </p>
                                 )}
                                 <div className="mt-3 flex flex-wrap gap-1.5">
                                   {habit.targetDays.map((day) => (

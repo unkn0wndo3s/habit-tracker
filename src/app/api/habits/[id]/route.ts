@@ -67,7 +67,8 @@ export async function PUT(
       archived: habit.archived,
       notificationEnabled: habit.notificationEnabled,
       notificationTime: habit.notificationTime || undefined,
-      createdAt: habit.createdAt
+      createdAt: habit.createdAt,
+      updatedAt: habit.updatedAt
     };
 
     return NextResponse.json({ habit: formattedHabit });

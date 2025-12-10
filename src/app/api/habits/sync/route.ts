@@ -39,12 +39,12 @@ export async function POST(request: Request) {
     const localHabitIds = new Set(habits.map(h => h.id));
 
     // Fusionner les habitudes : créer celles qui n'existent pas, mettre à jour celles qui existent
-    const habitsToCreate: typeof habits = [];
-    const habitsToUpdate: typeof habits = [];
+  const habitsToCreate: typeof habits = [];
+  const habitsToMaybeUpdate: typeof habits = [];
 
     for (const habit of habits) {
       if (existingHabitIds.has(habit.id)) {
-        habitsToUpdate.push(habit);
+        habitsToMaybeUpdate.push(habit);
       } else {
         habitsToCreate.push(habit);
       }
@@ -74,7 +74,15 @@ export async function POST(request: Request) {
     }
 
     // Mettre à jour les habitudes existantes
-    for (const habit of habitsToUpdate) {
+    for (const habit of habitsToMaybeUpdate) {
+      const existingHabit = existingHabits.find(h => h.id === habit.id);
+      if (!existingHabit) continue;
+
+      const localUpdatedAt = habit.updatedAt ? new Date(habit.updatedAt) : null;
+      const dbUpdatedAt = existingHabit.updatedAt;
+
+      // Mettre à jour en BDD uniquement si la version locale est plus récente
+      if (localUpdatedAt && localUpdatedAt > dbUpdatedAt) {
       const normalizedTags = (habit.tags || [])
         .map(tag => tag.trim().toLowerCase())
         .filter(tag => tag.length > 0)
@@ -89,9 +97,11 @@ export async function POST(request: Request) {
           tags: normalizedTags,
           archived: habit.archived || false,
           notificationEnabled: habit.notificationEnabled || false,
-          notificationTime: habit.notificationTime || null
+            notificationTime: habit.notificationTime || null,
+            updatedAt: localUpdatedAt
         }
       });
+    }
     }
 
     // Synchroniser les complétions
@@ -160,7 +170,8 @@ export async function POST(request: Request) {
       archived: habit.archived,
       notificationEnabled: habit.notificationEnabled,
       notificationTime: habit.notificationTime || undefined,
-      createdAt: habit.createdAt
+      createdAt: habit.createdAt,
+      updatedAt: habit.updatedAt
     }));
 
     return NextResponse.json({

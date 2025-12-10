@@ -37,7 +37,8 @@ export class HabitStorage {
         archived: habit.archived || false,
         notificationEnabled: habit.notificationEnabled ?? false,
         notificationTime: habit.notificationTime,
-        createdAt: new Date(habit.createdAt)
+        createdAt: new Date(habit.createdAt),
+        updatedAt: habit.updatedAt ? new Date(habit.updatedAt) : new Date(habit.createdAt)
       }));
     } catch (error) {
       console.error('Erreur lors du chargement des habitudes:', error);
@@ -60,7 +61,8 @@ export class HabitStorage {
       notificationEnabled: habit.notificationEnabled ?? false,
       notificationTime: habit.notificationTime,
       id: crypto.randomUUID(),
-      createdAt: new Date()
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
     
     habits.push(newHabit);
@@ -159,7 +161,8 @@ export class HabitStorage {
     
     habits[index] = {
       ...habits[index],
-      ...normalizedUpdates
+      ...normalizedUpdates,
+      updatedAt: new Date()
     };
     
     this.saveHabits(habits);
@@ -807,7 +810,8 @@ export class HabitStorage {
         ...habit,
         tags: habit.tags || [],
         archived: habit.archived ?? false,
-        createdAt: habit.createdAt || new Date().toISOString()
+        createdAt: habit.createdAt || new Date().toISOString(),
+        updatedAt: habit.updatedAt || habit.createdAt || new Date().toISOString()
       }));
 
       const habitIdMap: Record<string, string> = {};
