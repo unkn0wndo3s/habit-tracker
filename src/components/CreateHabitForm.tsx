@@ -97,7 +97,8 @@ export default function CreateHabitForm({ onHabitCreated, onError, initialValues
         targetDays,
         tags,
         notificationEnabled: notificationEnabled,
-        notificationTime: notificationEnabled ? notificationTime : undefined
+        notificationTime: notificationEnabled ? notificationTime : undefined,
+        updatedAt: new Date()
       });
 
       onHabitCreated(newHabit);

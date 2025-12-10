@@ -99,7 +99,8 @@ export async function POST(request: Request) {
       archived: habit.archived,
       notificationEnabled: habit.notificationEnabled,
       notificationTime: habit.notificationTime || undefined,
-      createdAt: habit.createdAt
+      createdAt: habit.createdAt,
+      updatedAt: new Date()
     };
 
     return NextResponse.json({ habit: formattedHabit }, { status: 201 });
