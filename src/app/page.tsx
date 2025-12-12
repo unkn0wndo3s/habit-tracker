@@ -702,13 +702,13 @@ export default function Home() {
     {
       key: 'manage',
       label: 'Gérer',
-      icon: 'settings',
+      icon: 'note',
       action: () => setViewMode('manage')
     },
     {
       key: 'settings',
       label: 'Paramètres',
-      icon: 'bell',
+      icon: 'settings',
       action: () => setViewMode('settings')
     },
     {
