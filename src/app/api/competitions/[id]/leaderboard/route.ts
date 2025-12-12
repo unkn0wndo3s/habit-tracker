@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/auth';
 
@@ -9,12 +9,14 @@ function toDateKey(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const { id } = await params;
+
   const comp = await prisma.competition.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { participants: true },
   });
   if (!comp) return NextResponse.json({ error: 'Not found' }, { status: 404 });

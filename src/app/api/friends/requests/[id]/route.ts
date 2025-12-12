@@ -1,14 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireUser } from '@/lib/auth';
 
 // PATCH /api/friends/requests/:id
 // body: { action: 'accept' | 'decline' | 'cancel' }
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser(request);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id } = params;
+  const { id } = await params;
   const body = await request.json().catch(() => null) as { action?: 'accept' | 'decline' | 'cancel' } | null;
   if (!body?.action) return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
