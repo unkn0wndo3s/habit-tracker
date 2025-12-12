@@ -12,6 +12,8 @@ import {
   Flame,
   NotebookPen,
   Pencil,
+  Trophy,
+  Users,
   Search,
   Settings,
   Sparkles,
@@ -30,6 +32,8 @@ type IconName =
   | 'chart'
   | 'note'
   | 'pencil'
+  | 'users'
+  | 'trophy'
   | 'copy'
   | 'archive'
   | 'trash'
@@ -56,6 +60,8 @@ const iconComponents: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> =
   chart: BarChart3,
   note: NotebookPen,
   pencil: Pencil,
+  users: Users,
+  trophy: Trophy,
   copy: Copy,
   archive: Archive,
   trash: Trash2,

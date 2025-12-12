@@ -290,11 +290,32 @@ export class HabitStorage {
     // Synchroniser avec la BDD si connecté
     if (AuthService.isAuthenticated()) {
       try {
-        await fetch(`/api/habits/${habitId}/completions`, {
+        let targetId = habitId;
+        let response = await fetch(`/api/habits/${targetId}/completions`, {
           method: 'POST',
           headers: AuthService.getAuthHeaders(),
           body: JSON.stringify({ date: targetDate.toISOString() })
         });
+
+        // If the server doesn't know this habit yet, try to sync then retry once
+        if (response.status === 404) {
+          const habit = this.loadHabits().find((h) => h.id === habitId);
+          if (habit) {
+            const newId = await this.syncHabitToDB(habit);
+            if (newId && newId !== targetId) {
+              targetId = newId;
+              response = await fetch(`/api/habits/${targetId}/completions`, {
+                method: 'POST',
+                headers: AuthService.getAuthHeaders(),
+                body: JSON.stringify({ date: targetDate.toISOString() })
+              });
+            }
+          }
+        }
+
+        if (!response.ok) {
+          console.error('Erreur lors de la synchronisation de la complétion:', await response.text());
+        }
       } catch (error) {
         console.error('Erreur lors de la synchronisation de la complétion:', error);
         // Continuer même en cas d'erreur (mode offline)
@@ -917,10 +938,38 @@ export class HabitStorage {
   /**
    * Synchronise une habitude avec la BDD
    */
-  private static async syncHabitToDB(habit: Habit): Promise<void> {
-    if (!AuthService.isAuthenticated()) {
-      return;
+  private static replaceHabitId(oldId: string, newId: string, serverHabit: Habit): void {
+    // Update habit id and persisted data to align with server
+    const habits = this.loadHabits();
+    const idx = habits.findIndex((h) => h.id === oldId);
+    if (idx !== -1) {
+      habits[idx] = {
+        ...serverHabit,
+        // Ensure dates are Date objects locally
+        createdAt: new Date(serverHabit.createdAt),
+        updatedAt: new Date(serverHabit.updatedAt ?? serverHabit.createdAt),
+      };
+      this.saveHabits(habits);
     }
+
+    // Remap completions to the new id
+    const completions = this.loadCompletions();
+    let changed = false;
+    Object.keys(completions).forEach((dateKey) => {
+      completions[dateKey] = completions[dateKey].map((entry) =>
+        entry.habitId === oldId ? { ...entry, habitId: newId } : entry
+      );
+      changed = changed || completions[dateKey].some((entry) => entry.habitId === newId);
+    });
+    if (changed) this.saveCompletions(completions);
+  }
+
+  private static async syncHabitToDB(habit: Habit): Promise<string | null> {
+    if (!AuthService.isAuthenticated()) {
+      return habit.id;
+    }
+
+    let currentId = habit.id;
 
     try {
       // Vérifier si l'habitude existe déjà dans la BDD
@@ -938,9 +987,13 @@ export class HabitStorage {
         })
       });
 
-      if (!response.ok && response.status === 404) {
+      if (response.ok) {
+        return currentId;
+      }
+
+      if (response.status === 404) {
         // L'habitude n'existe pas, la créer
-        await fetch('/api/habits', {
+        const createResponse = await fetch('/api/habits', {
           method: 'POST',
           headers: AuthService.getAuthHeaders(),
           body: JSON.stringify({
@@ -952,7 +1005,21 @@ export class HabitStorage {
             notificationTime: habit.notificationTime
           })
         });
+
+        if (createResponse.ok) {
+          const data = await createResponse.json();
+          const createdHabit: Habit | undefined = data?.habit;
+          if (createdHabit?.id) {
+            if (createdHabit.id !== habit.id) {
+              this.replaceHabitId(habit.id, createdHabit.id, createdHabit);
+              currentId = createdHabit.id;
+            } else {
+              this.replaceHabitId(habit.id, createdHabit.id, createdHabit);
+            }
+          }
+        }
       }
+      return currentId;
     } catch (error) {
       console.error('Erreur lors de la synchronisation de l\'habitude:', error);
       throw error;

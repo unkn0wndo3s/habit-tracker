@@ -25,8 +25,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Icon, IconName } from '@/components/Icon';
+import FriendsView from '@/components/social/FriendsView';
+import CompetitionsView from '@/components/social/CompetitionsView';
 
-type ViewMode = 'daily' | 'manage' | 'edit' | 'stats' | 'settings';
+type ViewMode = 'daily' | 'manage' | 'edit' | 'stats' | 'settings' | 'friends' | 'competitions';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -706,6 +708,18 @@ export default function Home() {
       action: () => setViewMode('manage')
     },
     {
+      key: 'friends',
+      label: 'Amis',
+      icon: 'users',
+      action: () => setViewMode('friends')
+    },
+    {
+      key: 'competitions',
+      label: 'Compétitions',
+      icon: 'trophy',
+      action: () => setViewMode('competitions')
+    },
+    {
       key: 'settings',
       label: 'Paramètres',
       icon: 'settings',
@@ -819,6 +833,14 @@ export default function Home() {
               onError={showError}
               onSuccess={showSuccess}
             />
+          )}
+
+          {viewMode === 'friends' && (
+            <FriendsView />
+          )}
+
+          {viewMode === 'competitions' && (
+            <CompetitionsView />
           )}
 
           {viewMode === 'manage' &&

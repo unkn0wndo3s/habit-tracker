@@ -29,15 +29,8 @@ export async function PUT(
       }
     });
 
-    if (!existingHabit) {
-      return NextResponse.json(
-        { error: 'Un problème est survenu lors de la mise à jour de l\'habitude' },
-        { status: 404 }
-      );
-    }
-
     // Normaliser les tags si présents
-    let normalizedTags = existingHabit.tags;
+    let normalizedTags = existingHabit?.tags ?? [];
     if (tags !== undefined) {
       normalizedTags = (tags || [])
         .map((tag: string) => tag.trim().toLowerCase())
@@ -45,18 +38,32 @@ export async function PUT(
         .filter((tag: string, index: number, array: string[]) => array.indexOf(tag) === index);
     }
 
-    const habit = await prisma.habit.update({
-      where: { id },
-      data: {
-        name: name !== undefined ? name : existingHabit.name,
-        description: description !== undefined ? (description || null) : existingHabit.description,
-        targetDays: targetDays !== undefined ? targetDays : existingHabit.targetDays,
-        tags: normalizedTags,
-        archived: archived !== undefined ? archived : existingHabit.archived,
-        notificationEnabled: notificationEnabled !== undefined ? notificationEnabled : existingHabit.notificationEnabled,
-        notificationTime: notificationTime !== undefined ? (notificationTime || null) : existingHabit.notificationTime
-      }
-    });
+    const habit = existingHabit
+      ? await prisma.habit.update({
+          where: { id },
+          data: {
+            name: name !== undefined ? name : existingHabit.name,
+            description: description !== undefined ? (description || null) : existingHabit.description,
+            targetDays: targetDays !== undefined ? targetDays : existingHabit.targetDays,
+            tags: normalizedTags,
+            archived: archived !== undefined ? archived : existingHabit.archived,
+            notificationEnabled: notificationEnabled !== undefined ? notificationEnabled : existingHabit.notificationEnabled,
+            notificationTime: notificationTime !== undefined ? (notificationTime || null) : existingHabit.notificationTime
+          }
+        })
+      : await prisma.habit.create({
+          data: {
+            id, // préserver l'ID fourni (créé côté client)
+            userId: user.userId,
+            name: name ?? 'Nouvelle habitude',
+            description: description ?? null,
+            targetDays: targetDays ?? [],
+            tags: normalizedTags,
+            archived: archived ?? false,
+            notificationEnabled: notificationEnabled ?? false,
+            notificationTime: notificationTime ?? null
+          }
+        });
 
     const formattedHabit: Habit = {
       id: habit.id,

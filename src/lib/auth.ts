@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
 
@@ -34,5 +35,18 @@ export function getTokenFromRequest(request: Request): string | null {
     return authHeader.substring(7);
   }
   return null;
+}
+
+export async function requireUser(request: Request) {
+  const token = getTokenFromRequest(request);
+  if (!token) {
+    return null;
+  }
+  const payload = verifyToken(token);
+  if (!payload) {
+    return null;
+  }
+  const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+  return user;
 }
 
